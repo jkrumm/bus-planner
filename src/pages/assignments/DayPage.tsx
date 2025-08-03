@@ -1,4 +1,18 @@
 import {useParams, useSearchParams, useNavigate, Link} from 'react-router-dom';
+
+// German translations for shift types
+const SHIFT_NAMES = {
+    [ShiftType.MORNING]: "Früh",
+    [ShiftType.AFTERNOON]: "Spät",
+    [ShiftType.NIGHT]: "Nacht",
+};
+
+// Short codes for shift types (for badges)
+const SHIFT_CODES = {
+    [ShiftType.MORNING]: "F",
+    [ShiftType.AFTERNOON]: "S",
+    [ShiftType.NIGHT]: "N",
+};
 import {useState, useEffect} from 'react';
 import {
     format,
@@ -14,7 +28,7 @@ import {de} from 'date-fns/locale';
 import {useGetLines, useGetLine} from '@/api/queries/lines';
 import {useGetBuses} from '@/api/queries/buses';
 import {useGetDrivers} from '@/api/queries/drivers';
-import {useCreateAssignment, useGetAssignmentsByDate} from '@/api/queries/assignments';
+import {useCreateAssignment, useGetAssignmentsByDate, useDeleteAssignment} from '@/api/queries/assignments';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
@@ -24,7 +38,13 @@ import {Separator} from '@/components/ui/separator';
 import {ShiftType} from '@/models/entities/Driver';
 import {Bus, BusSize, PropulsionType} from '@/models/entities/Bus';
 import {Driver} from '@/models/entities/Driver';
-import {User, Bus as BusIcon, Info, Battery, Ruler, CheckCircle, X, Plus, Save} from 'lucide-react';
+import {User, Bus as BusIcon, Info, Battery, Ruler, CheckCircle, X, Plus, Save, Trash} from 'lucide-react';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function DayPage() {
     const {date} = useParams<{ date: string }>();
@@ -171,7 +191,7 @@ export function DayPage() {
         if (diff === +2) return 'Übermorgen';
         if (diff === -1) return 'Gestern';
         if (diff === -2) return 'Vorgestern';
-        return `${diff > 0 ? '+' : ''}${diff}`;
+        return `${diff > 0 ? '+' : ''}${diff} Tage`;
     };
 
     const dateTabs = generateDateTabs();
@@ -258,6 +278,21 @@ export function DayPage() {
         const hasDriver = tempSelectedDriver !== null || selectedDrivers[shiftType] !== null;
 
         return hasBus && hasDriver;
+    };
+
+    // Function to check if an assignment can be deleted
+    const canDeleteAssignment = () => {
+        if (!lineId || !shiftType || !date) return false;
+
+        // Check if there's an existing assignment for this line, shift, and date
+        const existingAssignment = existingAssignments?.find(
+            assignment => 
+                assignment.lineId === lineId && 
+                assignment.shift === shiftType && 
+                ( new Date(assignment.date).toISOString().split('T')[0] === date)
+        );
+
+        return !!existingAssignment;
     };
 
     // Function to check if a line has all required shifts assigned
@@ -373,8 +408,9 @@ export function DayPage() {
         }
     };
 
-    // Use the create assignment mutation
+    // Use the create and delete assignment mutations
     const createAssignmentMutation = useCreateAssignment();
+    const deleteAssignmentMutation = useDeleteAssignment();
 
     // Get existing assignments for the selected date
     const {data: existingAssignments, isLoading: isLoadingAssignments} = useGetAssignmentsByDate(date);
@@ -400,6 +436,140 @@ export function DayPage() {
             setSelectedDrivers(newSelectedDrivers);
         }
     }, [existingAssignments, lineId]);
+
+    // Score drivers for the current shift and date
+    const scoreDriver = (driver: Driver, shift: ShiftType): number => {
+        if (!date) return 0;
+
+        let score = 50; // Base score
+        const currentDate = new Date(date);
+        const weekday = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+
+        // Perfect match criteria counter
+        let perfectMatchCriteria = 0;
+        let totalCriteria = 0;
+
+        // 1. Availability on the selected day is critical
+        totalCriteria++;
+        if (driver.availableDays && driver.availableDays.length > 0) {
+            if (!driver.availableDays.includes(weekday)) {
+                // Driver doesn't work on this day - critical issue
+                score -= 70;
+            } else {
+                // Driver is explicitly available on this day
+                perfectMatchCriteria++;
+                score += 15;
+            }
+        } else {
+            // Driver is available all days
+            perfectMatchCriteria++;
+            score += 5;
+        }
+
+        // 2. Check if driver is unavailable on this specific date (vacation, etc)
+        totalCriteria++;
+        if (driver.isAvailableOnDate && !driver.isAvailableOnDate(currentDate)) {
+            // Severe penalty - practically disqualifying
+            score -= 80;
+        } else {
+            perfectMatchCriteria++;
+        }
+
+        // 3. Check shift preference - major positive factor
+        totalCriteria++;
+        if (driver.hasShiftPreference && driver.hasShiftPreference(shift)) {
+            perfectMatchCriteria++;
+            score += 30; // Significant bonus
+        }
+
+        // 4. Check if driver avoids this shift - major negative factor
+        totalCriteria++;
+        if (driver.avoidsShift && driver.avoidsShift(shift)) {
+            score -= 60; // Severe penalty
+        } else {
+            perfectMatchCriteria++;
+        }
+
+        // 5. Check for existing assignments on same day (different shift)
+        totalCriteria++;
+        const hasOtherShiftToday = existingAssignments?.some(a => 
+            a.driverId === driver.id && 
+            new Date(a.date).toDateString() === currentDate.toDateString() &&
+            a.shift !== shift
+        ) || false;
+
+        if (hasOtherShiftToday) {
+            // This could be good or bad depending on context
+            // Here we treat it as positive for continuity
+            perfectMatchCriteria++;
+            score += 20;
+        }
+
+        // Perfect match bonus - if all criteria are met, ensure score can reach 100
+        if (perfectMatchCriteria === totalCriteria) {
+            score += (100 - score); // Boost to 100% for perfect matches
+        }
+
+        // Add a small random factor to differentiate otherwise equal scores (0-2 points)
+        if (perfectMatchCriteria !== totalCriteria) { // Don't add randomness to perfect scores
+            score += Math.floor(Math.random() * 3);
+        }
+
+        return Math.max(0, Math.min(100, Math.round(score))); // Round and clamp between 0-100
+    };
+
+    // Sort drivers based on their score for the current shift
+    const getSortedDrivers = (): Driver[] => {
+        if (!drivers || !shiftType) return drivers || [];
+
+        return [...drivers].sort((a, b) => {
+            const scoreA = scoreDriver(a, shiftType);
+            const scoreB = scoreDriver(b, shiftType);
+            return scoreB - scoreA; // Descending order (highest score first)
+        });
+    };
+
+    // Get opacity level based on driver score
+    const getDriverOpacity = (driver: Driver): string => {
+        if (!shiftType) return "";
+
+        const score = scoreDriver(driver, shiftType);
+        if (score >= 70) return ""; // Full opacity for good matches
+        if (score >= 40) return "opacity-70";
+        if (score >= 20) return "opacity-50";
+        return "opacity-30"; // Very poor matches
+    };
+
+    // Function to delete the current assignment
+    const handleDeleteAssignment = () => {
+        if (!lineId || !shiftType || !date) return;
+
+        // Find the existing assignment
+        const existingAssignment = existingAssignments?.find(
+            assignment => 
+                assignment.lineId === lineId && 
+                assignment.shift === shiftType && 
+                (new Date(assignment.date).toISOString().split('T')[0] === date)
+        );
+
+        if (existingAssignment) {
+            deleteAssignmentMutation.mutate(existingAssignment.id, {
+                onSuccess: () => {
+                    // Clear selections after successful deletion
+                    setSelectedBuses(prev => ({
+                        ...prev,
+                        [shiftType]: null
+                    }));
+                    setSelectedDrivers(prev => ({
+                        ...prev,
+                        [shiftType]: null
+                    }));
+                    setTempSelectedBus(null);
+                    setTempSelectedDriver(null);
+                }
+            });
+        }
+    };
 
     // Function to save the current assignment
     const saveAssignment = () => {
@@ -465,15 +635,26 @@ export function DayPage() {
                             <div className="text-xs font-medium">
                                 {`Bus ${tempSelectedBus ? '✓' : ''} und Fahrer ${tempSelectedDriver ? '✓' : ''} auswählen`}
                             </div>
-                            <Button
-                                disabled={!canSaveAssignment()}
-                                className="flex gap-2 items-center"
-                                onClick={saveAssignment}
-                                variant={canSaveAssignment() ? "default" : "outline"}
-                            >
-                                <Save className="h-4 w-4"/>
-                                {canSaveAssignment() ? 'Zuweisung speichern' : 'Bus und Fahrer benötigt'}
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    disabled={!canSaveAssignment() || createAssignmentMutation.isPending}
+                                    className="flex gap-2 items-center"
+                                    onClick={saveAssignment}
+                                    variant={canSaveAssignment() ? "default" : "outline"}
+                                >
+                                    <Save className="h-4 w-4"/>
+                                    {createAssignmentMutation.isPending ? 'Speichere...' : 'Speichern'}
+                                </Button>
+                                <Button
+                                    onClick={handleDeleteAssignment}
+                                    disabled={!canDeleteAssignment() || deleteAssignmentMutation.isPending}
+                                    variant="destructive"
+                                    className="flex items-center gap-2"
+                                >
+                                    <Trash className="h-4 w-4" />
+                                    {deleteAssignmentMutation.isPending ? 'Lösche...' : 'Löschen'}
+                                </Button>
+                            </div>
                         </div>
                 </div>
             </div>
@@ -519,7 +700,7 @@ export function DayPage() {
                     <ScrollArea className="h-full">
                         <div className="flex flex-col space-y-2">
                             {isLoadingLines ? (
-                                <p className="text-center text-muted-foreground py-8">Laden...</p>
+                                <p className="text-center text-muted-foreground py-8">Wird geladen...</p>
                             ) : (
                                 lines?.map((line, index) => {
                                     // Check if line is inactive or has no shifts needed today
@@ -589,24 +770,31 @@ export function DayPage() {
                                             <span><span
                                                 className="font-medium">Dauer:</span> {selectedLine.durationMinutes} min</span>
                                         </div>
-                                        {/* Show operating hours for the current day */}
-                                        {date && (() => {
-                                            const currentDate = new Date(date);
-                                            const dayOfWeek = currentDate
-                                                .toLocaleDateString('en-US', { weekday: 'long' })
-                                                .toLowerCase() as keyof typeof selectedLine.weeklySchedule;
-                                            const daySchedule = selectedLine.weeklySchedule[dayOfWeek];
+                                        {date && selectedLine && (
+                                            <div className="text-xs">
+                                                {(() => {
+                                                    const currentDate = new Date(date);
+                                                    const dayOfWeek = currentDate
+                                                        .toLocaleDateString('en-US', { weekday: 'long' })
+                                                        .toLowerCase() as keyof typeof selectedLine.weeklySchedule;
+                                                    const daySchedule = selectedLine.weeklySchedule[dayOfWeek];
 
-                                            return daySchedule ? (
-                                                <div className="text-xs">
-                                                    <span className="font-medium">Betriebszeiten:</span> {daySchedule.start} - {daySchedule.end}
-                                                </div>
-                                            ) : (
-                                                <div className="text-xs text-muted-foreground">
-                                                    Kein Betrieb heute
-                                                </div>
-                                            );
-                                        })()}
+                                                    if (daySchedule) {
+                                                        return (
+                                                            <div className="text-xs">
+                                                                <span className="font-medium">Betriebszeiten:</span> {daySchedule.start} - {daySchedule.end}
+                                                            </div>
+                                                        );
+                                                    } else {
+                                                        return (
+                                                            <div className="text-xs text-muted-foreground">
+                                                                Kein Betrieb heute
+                                                            </div>
+                                                        );
+                                                    }
+                                                })()}
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <p className="text-center text-muted-foreground py-4 text-xs">Wählen Sie eine Linie
@@ -636,7 +824,7 @@ export function DayPage() {
                                         "text-sm flex items-center justify-between",
                                         lineId && !isShiftRequired(ShiftType.MORNING) && "text-muted-foreground"
                                     )}>
-                                        <span>Früh (05:00-13:00)</span>
+                                        <span>{SHIFT_NAMES[ShiftType.MORNING]} (05:00-13:00)</span>
                                         {lineId && isShiftRequired(ShiftType.MORNING) && (
                                             isShiftComplete(ShiftType.MORNING) ? (
                                                 <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
@@ -690,7 +878,7 @@ export function DayPage() {
                                         "text-sm flex items-center justify-between",
                                         lineId && !isShiftRequired(ShiftType.AFTERNOON) && "text-muted-foreground"
                                     )}>
-                                        <span>Spät (13:00-21:00)</span>
+                                        <span>{SHIFT_NAMES[ShiftType.AFTERNOON]} (13:00-21:00)</span>
                                         {lineId && isShiftRequired(ShiftType.AFTERNOON) && (
                                             isShiftComplete(ShiftType.AFTERNOON) ? (
                                                 <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
@@ -744,7 +932,7 @@ export function DayPage() {
                                         "text-sm flex items-center justify-between",
                                         lineId && !isShiftRequired(ShiftType.NIGHT) && "text-muted-foreground"
                                     )}>
-                                        <span>Nacht (21:00-05:00)</span>
+                                        <span>{SHIFT_NAMES[ShiftType.NIGHT]} (21:00-05:00)</span>
                                         {lineId && isShiftRequired(ShiftType.NIGHT) && (
                                             isShiftComplete(ShiftType.NIGHT) ? (
                                                 <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
@@ -793,18 +981,21 @@ export function DayPage() {
                                         <BusIcon className="h-4 w-4 mr-1"/>
                                         <span>Busse</span>
                                     </div>
-                                    {isSelectionMode && (
+                                    {isSelectionMode ? (
                                         <span
                                             className="text-xs text-primary-foreground bg-primary px-2 py-0.5 rounded-full">
                                             Auswahl aktiv
                                         </span>
-                                    )}
+                                    ) : (<span
+                                      className="text-xs text-primary-foreground bg-primary px-2 py-0.5 rounded-full">
+                                            Auswahl inaktiv
+                                        </span>)}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="flex-1 min-h-0 p-2">
                                 <ScrollArea className="h-full">
                                     {isLoadingBuses ? (
-                                        <p className="text-center text-muted-foreground py-8">Laden...</p>
+                                        <p className="text-center text-muted-foreground py-8">Wird geladen...</p>
                                     ) : (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                                             {buses?.map((bus: Bus) => (
@@ -832,16 +1023,21 @@ export function DayPage() {
                                                             variant={bus.propulsionType === PropulsionType.ELECTRIC ? "default" : "secondary"}
                                                             className="text-xs h-4"
                                                         >
-                                                            {bus.propulsionType === PropulsionType.ELECTRIC ? "E" : "D"}
+                                                            {bus.propulsionType === PropulsionType.ELECTRIC ? "Elektro" : "Diesel"}
                                                         </Badge>
                                                     </div>
 
                                                     <div className="flex items-center justify-between mt-1">
                                                         <div
                                                             className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                            <span className="capitalize">{bus.size}</span>
-                                                            {bus.propulsionType === PropulsionType.ELECTRIC && bus.maxRangeKm && (
-                                                                <span>{bus.maxRangeKm} km</span>
+                                                            <span>
+                                                                {bus.size === BusSize.SMALL ? "Klein" : 
+                                                                 bus.size === BusSize.MEDIUM ? "Mittel" : 
+                                                                 bus.size === BusSize.LARGE ? "Groß" : 
+                                                                 bus.size === BusSize.ARTICULATED ? "Gelenkbus" : bus.size}
+                                                            </span>
+                                                            {bus.propulsionType === PropulsionType.ELECTRIC && (
+                                                                <span>{bus.maxRangeKm || "--"} km</span>
                                                             )}
                                                         </div>
 
@@ -879,17 +1075,20 @@ export function DayPage() {
                             <CardContent className="flex-1 min-h-0 p-2">
                                 <ScrollArea className="h-full">
                                     {isLoadingDrivers ? (
-                                        <p className="text-center text-muted-foreground py-8">Laden...</p>
+                                        <p className="text-center text-muted-foreground py-8">Wird geladen...</p>
                                     ) : (
+                                        <TooltipProvider>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-                                            {drivers?.map((driver: Driver) => (
+                                            {getSortedDrivers().map((driver: Driver) => (
+                                                <Tooltip key={driver.id}>
+                                                <TooltipTrigger asChild>
                                                 <div
-                                                    key={driver.id}
                                                     className={cn(
                                                         "p-2 border rounded-md hover:bg-muted/50 flex flex-col h-20 transition-all",
                                                         isSelectionMode && shiftType ? "cursor-pointer" : "",
                                                         tempSelectedDriver === driver.id && "border-blue-500 border-2 bg-blue-50/50",
-                                                        shiftType && selectedDrivers[shiftType] === driver.id && "border-green-500 border-2 bg-green-50/50"
+                                                        shiftType && selectedDrivers[shiftType] === driver.id && "border-green-500 border-2 bg-green-50/50",
+                                                        getDriverOpacity(driver)
                                                     )}
                                                     onClick={() => {
                                                         if (isSelectionMode && shiftType) {
@@ -903,33 +1102,181 @@ export function DayPage() {
                                                 >
                                                     <div className="flex justify-between items-center">
                                                         <p className="font-medium text-sm truncate">{driver.fullName}</p>
-                                                        {(tempSelectedDriver === driver.id || (shiftType && selectedDrivers[shiftType] === driver.id)) && (
-                                                            <CheckCircle className={cn(
-                                                                "h-4 w-4",
-                                                                tempSelectedDriver === driver.id ? "text-blue-500" : "text-green-500"
-                                                            )}/>
-                                                        )}
+                                                        <div className="flex gap-1 items-center">
+                                                            {shiftType && (
+                                                                <Badge 
+                                                                    variant="outline" 
+                                                                    className={cn(
+                                                                        "h-3 text-[9px] px-1",
+                                                                        scoreDriver(driver, shiftType) === 100 ? "text-blue-600 border-blue-200 bg-blue-50" :
+                                                                        scoreDriver(driver, shiftType) >= 70 ? "text-green-600 border-green-200 bg-green-50" :
+                                                                        scoreDriver(driver, shiftType) >= 40 ? "text-amber-600 border-amber-200 bg-amber-50" :
+                                                                        "text-red-600 border-red-200 bg-red-50"
+                                                                    )}
+                                                                >
+                                                                    {scoreDriver(driver, shiftType)}%
+                                                                </Badge>
+                                                            )}
+                                                            {shiftType && driver.hasShiftPreference && driver.hasShiftPreference(shiftType) && (
+                                                                <Badge variant="outline" className="h-3 text-[9px] px-1 text-green-600 border-green-200 bg-green-50">
+                                                                    Bevorzugt
+                                                                </Badge>
+                                                            )}
+                                                            {shiftType && driver.avoidsShift && driver.avoidsShift(shiftType) && (
+                                                                <Badge variant="outline" className="h-3 text-[9px] px-1 text-red-600 border-red-200 bg-red-50">
+                                                                    Vermeidet
+                                                                </Badge>
+                                                            )}
+                                                            {(tempSelectedDriver === driver.id || (shiftType && selectedDrivers[shiftType] === driver.id)) && (
+                                                                <CheckCircle className={cn(
+                                                                    "h-4 w-4",
+                                                                    tempSelectedDriver === driver.id ? "text-blue-500" : "text-green-500"
+                                                                )}/>
+                                                            )}
+                                                        </div>
                                                     </div>
 
-                                                    <div className="flex items-center justify-between mt-1">
-                                                        <span
-                                                            className="text-xs text-muted-foreground">{driver.weeklyHours} Std/Woche</span>
+                                                    <div className="flex flex-col gap-1 mt-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-xs text-muted-foreground">{driver.weeklyHours} Std/Woche</span>
 
-                                                        {driver.preferredShifts && driver.preferredShifts.length > 0 && (
                                                             <div className="flex gap-1">
-                                                                {driver.preferredShifts.slice(0, 2).map((shift, index) => (
-                                                                    <Badge key={`${driver.id}-${shift}-${index}`}
-                                                                           variant="outline"
-                                                                           className="text-[10px] h-3 px-1">
-                                                                        {shift.charAt(0)}
-                                                                    </Badge>
-                                                                ))}
+                                                                {/* Always show all three shift types */}
+                                                                {Object.values(ShiftType).map((shift) => {
+                                                                    const isPreferred = driver.hasShiftPreference(shift);
+                                                                    const isAvoided = driver.avoidsShift(shift);
+
+                                                                    // Get the badge label from the constant
+                                                                    const label = SHIFT_CODES[shift];
+
+                                                                    return (
+                                                                        <Badge 
+                                                                            key={`${driver.id}-shift-${shift}`}
+                                                                            variant="outline"
+                                                                            className={cn(
+                                                                                "text-[10px] h-3 px-1",
+                                                                                isPreferred && "text-green-600 border-green-200 bg-green-50",
+                                                                                isAvoided && "text-red-600 border-red-200 bg-red-50",
+                                                                                !isPreferred && !isAvoided && "text-gray-400 border-gray-200"
+                                                                            )}
+                                                                        >
+                                                                            {label}
+                                                                        </Badge>
+                                                                    );
+                                                                })}
                                                             </div>
-                                                        )}
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            {driver.availableDays && driver.availableDays.length > 0 ? (
+                                                                <div className="text-[10px] text-muted-foreground">
+                                                                    Tage: {driver.availableDays.map(day => {
+                                                                        const dayMap: Record<string, string> = {
+                                                                            'monday': 'Mo',
+                                                                            'tuesday': 'Di',
+                                                                            'wednesday': 'Mi',
+                                                                            'thursday': 'Do',
+                                                                            'friday': 'Fr',
+                                                                            'saturday': 'Sa',
+                                                                            'sunday': 'So'
+                                                                        };
+                                                                        return dayMap[day.toLowerCase()] || day.slice(0, 2);
+                                                                    }).join(', ')}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-[10px] text-muted-foreground">
+                                                                    Alle Tage verfügbar
+                                                                </div>
+                                                            )}
+                                                            {date && driver.isAvailableOnDate && !driver.isAvailableOnDate(new Date(date)) && (
+                                                                <Badge className="text-[9px] h-3 px-1 bg-red-500">
+                                                                    Nicht verfügbar
+                                                                </Badge>
+                                                            )}
+                                                            {date && existingAssignments && existingAssignments.some(a => 
+                                                                a.driverId === driver.id && 
+                                                                new Date(a.date).toDateString() === new Date(date).toDateString() &&
+                                                                (shiftType ? a.shift !== shiftType : true)
+                                                            ) && (
+                                                                <Badge className="text-[9px] h-3 px-1 bg-blue-500">
+                                                                    Bereits eingeplant
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="p-3 w-[250px]">
+                                                    <div className="space-y-2">
+                                                        <div className="font-medium">{driver.fullName}</div>
+                                                        {shiftType && (
+                                                            <div className="text-xs">
+                                                                <span className="font-medium">Übereinstimmung:</span>{' '}
+                                                                <span className={cn(
+                                                                    scoreDriver(driver, shiftType) === 100 ? "text-blue-600 font-bold" :
+                                                                    scoreDriver(driver, shiftType) >= 70 ? "text-green-600" :
+                                                                    scoreDriver(driver, shiftType) >= 40 ? "text-amber-600" :
+                                                                    "text-red-600"
+                                                                )}>
+                                                                    {scoreDriver(driver, shiftType)}%
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="text-xs space-y-1">
+                                                            <div><span className="font-medium">Wöchentliche Stunden:</span> {driver.weeklyHours}</div>
+                                                            {driver.availableDays && driver.availableDays.length > 0 && (
+                                                                <div>
+                                                                    <span className="font-medium">Verfügbare Tage:</span>{' '}
+                                                                    {driver.availableDays.map(day => {
+                                                                        // Convert to German day names
+                                                                        const dayMap: Record<string, string> = {
+                                                                            'monday': 'Montag',
+                                                                            'tuesday': 'Dienstag',
+                                                                            'wednesday': 'Mittwoch',
+                                                                            'thursday': 'Donnerstag',
+                                                                            'friday': 'Freitag',
+                                                                            'saturday': 'Samstag',
+                                                                            'sunday': 'Sonntag'
+                                                                        };
+                                                                        return dayMap[day.toLowerCase()] || day;
+                                                                    }).join(', ')}
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <span className="font-medium">Schichtpräferenzen:</span>{' '}
+                                                                <div className="flex gap-2 mt-1">
+                                                                    {Object.values(ShiftType).map(shift => {
+                                                                        const isPreferred = driver.hasShiftPreference(shift);
+                                                                        const isAvoided = driver.avoidsShift(shift);
+                                                                                                                                                                const shiftName = SHIFT_NAMES[shift];
+
+                                                                        return (
+                                                                            <div key={`tooltip-${driver.id}-${shift}`} className="flex items-center gap-1">
+                                                                                <Badge 
+                                                                                    className={cn(
+                                                                                        "text-xs px-2 py-0",
+                                                                                        isPreferred && "bg-green-100 text-green-800 hover:bg-green-100",
+                                                                                        isAvoided && "bg-red-100 text-red-800 hover:bg-red-100",
+                                                                                        !isPreferred && !isAvoided && "bg-gray-100 text-gray-800 hover:bg-gray-100"
+                                                                                    )}
+                                                                                    variant="outline"
+                                                                                >
+                                                                                    {shiftName}
+                                                                                    {isPreferred && " ✓"}
+                                                                                    {isAvoided && " ✗"}
+                                                                                </Badge>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </TooltipContent>
+                                                </Tooltip>
                                             ))}
                                         </div>
+                                    </TooltipProvider>
                                     )}
                                 </ScrollArea>
                             </CardContent>

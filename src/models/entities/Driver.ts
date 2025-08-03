@@ -36,7 +36,9 @@ export class Driver {
     this.id = id || uuidv4();
     this.fullName = fullName;
     this.weeklyHours = weeklyHours;
-    this.preferredShifts = preferredShifts;
+
+    // Remove contradicting shift preferences (a shift can't be both preferred and avoided)
+    this.preferredShifts = preferredShifts.filter(shift => !shiftsToAvoid.includes(shift));
     this.shiftsToAvoid = shiftsToAvoid;
     this.availableDays = availableDays;
   }
@@ -87,6 +89,30 @@ export class Driver {
     );
   }
 
+  /**
+   * Checks if there are any contradictions in shift preferences
+   * (shifts that appear in both preferred and avoid lists)
+   */
+  public hasContradictingPreferences(): boolean {
+    return this.preferredShifts.some(shift => this.shiftsToAvoid.includes(shift));
+  }
+
+  /**
+   * Resolves contradictions by removing conflicting shifts from preferredShifts
+   * Returns the shifts that were removed
+   */
+  public resolveContradictions(): ShiftType[] {
+    const contradictions = this.preferredShifts.filter(shift => 
+      this.shiftsToAvoid.includes(shift));
+
+    if (contradictions.length > 0) {
+      this.preferredShifts = this.preferredShifts.filter(shift => 
+        !this.shiftsToAvoid.includes(shift));
+    }
+
+    return contradictions;
+  }
+
   public toJSON(): DriverJSON {
     return {
       id: this.id,
@@ -100,10 +126,15 @@ export class Driver {
   }
 
   public static fromJSON(json: DriverJSON): Driver {
+    // Filter out any shifts that appear in both preferred and avoid lists before creating the driver
+    const cleanPreferredShifts = (json.preferredShifts || []).filter(
+      shift => !(json.shiftsToAvoid || []).includes(shift)
+    );
+
     const driver = new Driver(
       json.fullName,
       json.weeklyHours,
-      json.preferredShifts,
+      cleanPreferredShifts,
       json.shiftsToAvoid,
       json.availableDays,
       json.id

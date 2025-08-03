@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Driver, ShiftType } from '@/models/entities/Driver';
+import { Driver, type DriverJSON, ShiftType } from '@/models/entities/Driver';
 import { DRIVERS_API } from '@/api/apiConfig';
 import { queryKeys } from '@/api/queryKeys';
+import { Line } from '@/models/entities/Line.ts';
 
 // Fetch all drivers
 export function useGetDrivers() {
@@ -12,7 +13,7 @@ export function useGetDrivers() {
       if (!response.ok) {
         throw new Error('Failed to fetch drivers');
       }
-      return (await response.json() as Driver[]);
+      return ((await response.json()) as DriverJSON[]).map(driver => Driver.fromJSON(driver));
     }
   });
 }

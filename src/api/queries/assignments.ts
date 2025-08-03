@@ -85,7 +85,7 @@ export const useCreateAssignment = () => {
       // Extract the date from the variables to invalidate date-specific queries
       const dateStr = new Date(variables.date).toISOString().split('T')[0];
       queryClient.invalidateQueries({
-        queryKey: queryKeys.assignments.byDate(dateStr),
+        queryKey: queryKeys.assignments.byDate(dateStr!),
       });
     },
   });

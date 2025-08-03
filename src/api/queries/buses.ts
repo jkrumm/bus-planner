@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bus, BusSize, PropulsionType } from '@/models/entities/Bus';
 import { queryKeys } from '@/api/queryKeys';
 import {BUSES_API} from "@/api/apiConfig.ts";
+import { Line } from '@/models/entities/Line.ts';
 
 // Fetch all buses
 export function useGetBuses() {
@@ -12,7 +13,7 @@ export function useGetBuses() {
       if (!response.ok) {
         throw new Error('Failed to fetch buses');
       }
-      return (await response.json()) as Bus[];
+      return ((await response.json()) as Bus[]).map(bus => Bus.fromJSON(bus));
     }
   });
 }
