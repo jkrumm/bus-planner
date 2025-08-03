@@ -54,6 +54,69 @@ export function DayPage() {
     // Format date for display
     const formattedDate = date ? format(new Date(date), 'dd.MM.yyyy', {locale: de}) : '';
 
+    // Helper function to check if shift times overlap with line operating hours
+    const isShiftRequired = (shift: ShiftType): boolean => {
+        if (!selectedLine || !date) return false;
+
+        const currentDate = new Date(date);
+        const dayOfWeek = currentDate
+            .toLocaleDateString('en-US', { weekday: 'long' })
+            .toLowerCase() as keyof typeof selectedLine.weeklySchedule;
+
+        const daySchedule = selectedLine.weeklySchedule[dayOfWeek];
+        if (!daySchedule) return false;
+
+        // Define shift time ranges (24-hour format)
+        const shiftRanges = {
+            [ShiftType.MORNING]: { start: '05:00', end: '13:00' },    // Early shift: 5:00 - 13:00
+            [ShiftType.AFTERNOON]: { start: '13:00', end: '21:00' },  // Late shift: 13:00 - 21:00
+            [ShiftType.NIGHT]: { start: '21:00', end: '05:00' }       // Night shift: 21:00 - 05:00 (next day)
+        };
+
+        const shiftRange = shiftRanges[shift];
+        const lineStart = daySchedule.start;
+        const lineEnd = daySchedule.end;
+
+        // Convert time strings to minutes since midnight for easier comparison
+        const timeToMinutes = (time: string): number => {
+            const [hours, minutes] = time.split(':').map(Number);
+            if (hours == undefined || minutes == undefined) throw new Error(
+                `Invalid time format: ${time}. Expected format is HH:MM.`
+            );
+            return hours * 60 + minutes;
+        };
+
+        const shiftStartMinutes = timeToMinutes(shiftRange.start);
+        let shiftEndMinutes = timeToMinutes(shiftRange.end);
+        const lineStartMinutes = timeToMinutes(lineStart);
+        const lineEndMinutes = timeToMinutes(lineEnd);
+
+        // Handle night shift that crosses midnight
+        if (shift === ShiftType.NIGHT) {
+            shiftEndMinutes += 24 * 60; // Add 24 hours to represent next day
+        }
+
+        // Check for overlap
+        if (shift === ShiftType.NIGHT) {
+            // Night shift: check if line operates during 21:00-23:59 OR 00:00-05:00
+            const nightStart = shiftStartMinutes; // 21:00
+            const nightEnd = 24 * 60; // 23:59
+            const earlyMorningStart = 0; // 00:00
+            const earlyMorningEnd = timeToMinutes('05:00'); // 05:00
+
+            // Check overlap with evening hours (21:00-23:59)
+            const eveningOverlap = (lineStartMinutes < nightEnd && lineEndMinutes > nightStart);
+
+            // Check overlap with early morning hours (00:00-05:00)
+            const morningOverlap = (lineStartMinutes < earlyMorningEnd && lineEndMinutes > earlyMorningStart);
+
+            return eveningOverlap || morningOverlap;
+        } else {
+            // Regular shifts: check for time range overlap
+            return lineStartMinutes < shiftEndMinutes && lineEndMinutes > shiftStartMinutes;
+        }
+    };
+
     // Generate date navigation tabs (5 days before, current day, 5 days after)
     const generateDateTabs = () => {
         if (!date) return [];
@@ -155,6 +218,9 @@ export function DayPage() {
 
     // Handle shift selection (combined bus and driver selection)
     const handleShiftSelect = (shift: ShiftType) => {
+        // Don't allow selection if shift is not required
+        if (!isShiftRequired(shift)) return;
+
         // Reset temporary selections when entering a new shift selection
         if (shiftType !== shift) {
             setTempSelectedBus(null);
@@ -192,6 +258,119 @@ export function DayPage() {
         const hasDriver = tempSelectedDriver !== null || selectedDrivers[shiftType] !== null;
 
         return hasBus && hasDriver;
+    };
+
+    // Function to check if a line has all required shifts assigned
+    const isLineFullyAssigned = (lineId: string): boolean => {
+        if (!date) return false;
+
+        // Get the line data
+        const line = lines?.find(l => l.id === lineId);
+        if (!line) return false;
+
+        // Check each shift type
+        const morningRequired = isShiftRequiredForLine(ShiftType.MORNING, line);
+        const afternoonRequired = isShiftRequiredForLine(ShiftType.AFTERNOON, line);
+        const nightRequired = isShiftRequiredForLine(ShiftType.NIGHT, line);
+
+        // Get assignments for this line
+        const lineAssignments = existingAssignments?.filter(a => a.lineId === lineId) || [];
+
+        // Check if all required shifts have both bus and driver assigned
+        if (morningRequired) {
+            const morningAssignment = lineAssignments.find(a => a.shift === ShiftType.MORNING);
+            if (!morningAssignment || !morningAssignment.busId || !morningAssignment.driverId) return false;
+        }
+
+        if (afternoonRequired) {
+            const afternoonAssignment = lineAssignments.find(a => a.shift === ShiftType.AFTERNOON);
+            if (!afternoonAssignment || !afternoonAssignment.busId || !afternoonAssignment.driverId) return false;
+        }
+
+        if (nightRequired) {
+            const nightAssignment = lineAssignments.find(a => a.shift === ShiftType.NIGHT);
+            if (!nightAssignment || !nightAssignment.busId || !nightAssignment.driverId) return false;
+        }
+
+        // If we've made it here, all required shifts are assigned
+        return (morningRequired || afternoonRequired || nightRequired);
+    };
+
+    // Function to check if any shifts are required for a line
+    const hasRequiredShifts = (lineId: string): boolean => {
+        if (!date) return false;
+
+        // Get the line data
+        const line = lines?.find(l => l.id === lineId);
+        if (!line) return false;
+
+        // Check if any shift is required
+        return isShiftRequiredForLine(ShiftType.MORNING, line) || 
+               isShiftRequiredForLine(ShiftType.AFTERNOON, line) || 
+               isShiftRequiredForLine(ShiftType.NIGHT, line);
+    };
+
+    // Helper to check if a shift is required for a specific line
+    const isShiftRequiredForLine = (shift: ShiftType, line: any): boolean => {
+        if (!date) return false;
+
+        const currentDate = new Date(date);
+        const dayOfWeek = currentDate
+            .toLocaleDateString('en-US', { weekday: 'long' })
+            .toLowerCase() as keyof typeof line.weeklySchedule;
+
+        const daySchedule = line.weeklySchedule[dayOfWeek];
+        if (!daySchedule) return false;
+
+        // Define shift time ranges (24-hour format)
+        const shiftRanges = {
+            [ShiftType.MORNING]: { start: '05:00', end: '13:00' },
+            [ShiftType.AFTERNOON]: { start: '13:00', end: '21:00' },
+            [ShiftType.NIGHT]: { start: '21:00', end: '05:00' }
+        };
+
+        const shiftRange = shiftRanges[shift];
+        const lineStart = daySchedule.start;
+        const lineEnd = daySchedule.end;
+
+        // Convert time strings to minutes since midnight for easier comparison
+        const timeToMinutes = (time: string): number => {
+            const [hours, minutes] = time.split(':').map(Number);
+            if (hours == undefined || minutes == undefined ) throw new Error(
+                `Invalid time format: ${time}`
+            )
+            return hours * 60 + minutes;
+        };
+
+        const shiftStartMinutes = timeToMinutes(shiftRange.start);
+        let shiftEndMinutes = timeToMinutes(shiftRange.end);
+        const lineStartMinutes = timeToMinutes(lineStart);
+        const lineEndMinutes = timeToMinutes(lineEnd);
+
+        // Handle night shift that crosses midnight
+        if (shift === ShiftType.NIGHT) {
+            shiftEndMinutes += 24 * 60; // Add 24 hours to represent next day
+        }
+
+        // Check for overlap
+        if (shift === ShiftType.NIGHT) {
+            // Night shift: check if line operates during 21:00-23:59 OR 00:00-05:00
+            const nightStart = shiftStartMinutes; // 21:00
+            const nightEnd = 24 * 60; // 23:59
+            const earlyMorningStart = 0; // 00:00
+            const earlyMorningEnd = timeToMinutes('05:00'); // 05:00
+
+            // Check overlap with evening hours (21:00-23:59)
+            const eveningOverlap = (lineStartMinutes < nightEnd && lineEndMinutes > nightStart);
+
+            // Check overlap with early morning hours (00:00-05:00)
+            const morningOverlap = (lineStartMinutes < earlyMorningEnd && lineEndMinutes > earlyMorningStart);
+
+            return eveningOverlap || morningOverlap;
+        } else {
+            // Regular shifts: check for time range overlap
+            return lineStartMinutes < shiftEndMinutes && lineEndMinutes > shiftStartMinutes;
+        }
     };
 
     // Use the create assignment mutation
@@ -281,7 +460,7 @@ export function DayPage() {
                         {lineId && selectedLineName ? ` (${selectedLineName})` : ''}
                     </h1>
 
-                    {isSelectionMode && shiftType && (
+
                         <div className="flex flex-col items-end gap-1">
                             <div className="text-xs font-medium">
                                 {`Bus ${tempSelectedBus ? '✓' : ''} und Fahrer ${tempSelectedDriver ? '✓' : ''} auswählen`}
@@ -296,7 +475,6 @@ export function DayPage() {
                                 {canSaveAssignment() ? 'Zuweisung speichern' : 'Bus und Fahrer benötigt'}
                             </Button>
                         </div>
-                    )}
                 </div>
             </div>
 
@@ -343,23 +521,44 @@ export function DayPage() {
                             {isLoadingLines ? (
                                 <p className="text-center text-muted-foreground py-8">Laden...</p>
                             ) : (
-                                lines?.map((line, index) => (
-                                    <div key={line.id} className="w-full">
-                                        <button
-                                            onClick={() => handleLineSelect(line.id)}
-                                            className={cn(
-                                                "w-full p-3 text-center rounded-lg border text-sm transition-all hover:bg-muted/50",
-                                                lineId === line.id
-                                                    ? "bg-muted shadow-sm"
-                                                    : "bg-background border-border hover:border-muted-foreground/30"
-                                            )}
-                                        >
-                                            <div className="font-medium">{line.lineNumber}</div>
-                                            <div
-                                                className="text-xs text-muted-foreground break-words">{line.routeName}</div>
-                                        </button>
-                                    </div>
-                                ))
+                                lines?.map((line, index) => {
+                                    // Check if line is inactive or has no shifts needed today
+                                    const isInactiveOrNoShifts = !line.isActive || !line.operatesOnDate(date ? new Date(date) : new Date());
+                                    const isFullyAssigned = isLineFullyAssigned(line.id);
+                                    const hasShifts = hasRequiredShifts(line.id);
+
+                                    return (
+                                        <div key={line.id} className="w-full">
+                                            <button
+                                                onClick={() => handleLineSelect(line.id)}
+                                                className={cn(
+                                                    "w-full p-3 text-center rounded-lg border text-sm transition-all",
+                                                    lineId === line.id
+                                                        ? "bg-muted shadow-sm"
+                                                        : "bg-background border-border hover:border-muted-foreground/30",
+                                                    isInactiveOrNoShifts
+                                                        ? "opacity-40 hover:opacity-60"
+                                                        : "hover:bg-muted/50"
+                                                )}
+                                            >
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <div className={cn(
+                                                        "font-medium",
+                                                        isInactiveOrNoShifts && "text-muted-foreground"
+                                                    )}>{line.lineNumber}</div>
+                                                    {!isInactiveOrNoShifts && hasShifts && (
+                                                        isFullyAssigned ? (
+                                                            <CheckCircle className="h-3 w-3 text-green-500" />
+                                                        ) : (
+                                                            <X className="h-3 w-3 text-red-500" />
+                                                        )
+                                                    )}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground break-words">{line.routeName}</div>
+                                            </button>
+                                        </div>
+                                    );
+                                })
                             )}
 
                             {!isLoadingLines && (!lines || lines.length === 0) && (
@@ -390,6 +589,24 @@ export function DayPage() {
                                             <span><span
                                                 className="font-medium">Dauer:</span> {selectedLine.durationMinutes} min</span>
                                         </div>
+                                        {/* Show operating hours for the current day */}
+                                        {date && (() => {
+                                            const currentDate = new Date(date);
+                                            const dayOfWeek = currentDate
+                                                .toLocaleDateString('en-US', { weekday: 'long' })
+                                                .toLowerCase() as keyof typeof selectedLine.weeklySchedule;
+                                            const daySchedule = selectedLine.weeklySchedule[dayOfWeek];
+
+                                            return daySchedule ? (
+                                                <div className="text-xs">
+                                                    <span className="font-medium">Betriebszeiten:</span> {daySchedule.start} - {daySchedule.end}
+                                                </div>
+                                            ) : (
+                                                <div className="text-xs text-muted-foreground">
+                                                    Kein Betrieb heute
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 ) : (
                                     <p className="text-center text-muted-foreground py-4 text-xs">Wählen Sie eine Linie
@@ -398,25 +615,36 @@ export function DayPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Shifts - Flexible height */}
-                        <div className="flex-1 min-h-0 flex flex-col gap-3">
+                        {/* Shifts - Compact layout */}
+                        <div className="flex flex-col gap-3">
                             {/* Morning Shift */}
                             <Card
                                 className={cn(
-                                    "flex-1 min-h-0",
+                                    "flex-shrink-0 h-auto",
                                     shiftType === ShiftType.MORNING && "border-blue-500 border-2",
-                                    selectedBuses[ShiftType.MORNING] && selectedDrivers[ShiftType.MORNING] && "border-green-500 border-2",
-                                    (selectedBuses[ShiftType.MORNING] || selectedDrivers[ShiftType.MORNING]) && !(selectedBuses[ShiftType.MORNING] && selectedDrivers[ShiftType.MORNING]) && "border-yellow-500 border-2",
-                                    lineId && "cursor-pointer hover:bg-muted/50 transition-colors"
+                                    lineId && isShiftRequired(ShiftType.MORNING) && "cursor-pointer hover:bg-muted/50 transition-colors",
+                                    lineId && !isShiftRequired(ShiftType.MORNING) && "opacity-40"
                                 )}
                                 onClick={() => {
-                                    if (lineId) {
+                                    if (lineId && isShiftRequired(ShiftType.MORNING)) {
                                         handleShiftSelect(ShiftType.MORNING);
                                     }
                                 }}
                             >
                                 <CardHeader className="flex-shrink-0 p-3">
-                                    <CardTitle className="text-sm">Früh</CardTitle>
+                                    <CardTitle className={cn(
+                                        "text-sm flex items-center justify-between",
+                                        lineId && !isShiftRequired(ShiftType.MORNING) && "text-muted-foreground"
+                                    )}>
+                                        <span>Früh (05:00-13:00)</span>
+                                        {lineId && isShiftRequired(ShiftType.MORNING) && (
+                                            isShiftComplete(ShiftType.MORNING) ? (
+                                                <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
+                                            ) : (
+                                                <X className="h-4 w-4 text-red-500 ml-2" />
+                                            )
+                                        )}
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="flex-1 min-h-0 p-3">
                                     {lineId && selectedLine ? (
@@ -446,20 +674,31 @@ export function DayPage() {
                             {/* Afternoon Shift */}
                             <Card
                                 className={cn(
-                                    "flex-1 min-h-0",
+                                    "flex-shrink-0 h-auto",
                                     shiftType === ShiftType.AFTERNOON && "border-blue-500 border-2",
-                                    selectedBuses[ShiftType.AFTERNOON] && selectedDrivers[ShiftType.AFTERNOON] && "border-green-500 border-2",
-                                    (selectedBuses[ShiftType.AFTERNOON] || selectedDrivers[ShiftType.AFTERNOON]) && !(selectedBuses[ShiftType.AFTERNOON] && selectedDrivers[ShiftType.AFTERNOON]) && "border-yellow-500 border-2",
-                                    lineId && "cursor-pointer hover:bg-muted/50 transition-colors"
+                                    lineId && isShiftRequired(ShiftType.AFTERNOON) && "cursor-pointer hover:bg-muted/50 transition-colors",
+                                    lineId && !isShiftRequired(ShiftType.AFTERNOON) && "opacity-40"
                                 )}
                                 onClick={() => {
-                                    if (lineId) {
+                                    if (lineId && isShiftRequired(ShiftType.AFTERNOON)) {
                                         handleShiftSelect(ShiftType.AFTERNOON);
                                     }
                                 }}
                             >
                                 <CardHeader className="flex-shrink-0 p-3">
-                                    <CardTitle className="text-sm">Mittag</CardTitle>
+                                    <CardTitle className={cn(
+                                        "text-sm flex items-center justify-between",
+                                        lineId && !isShiftRequired(ShiftType.AFTERNOON) && "text-muted-foreground"
+                                    )}>
+                                        <span>Spät (13:00-21:00)</span>
+                                        {lineId && isShiftRequired(ShiftType.AFTERNOON) && (
+                                            isShiftComplete(ShiftType.AFTERNOON) ? (
+                                                <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
+                                            ) : (
+                                                <X className="h-4 w-4 text-red-500 ml-2" />
+                                            )
+                                        )}
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="flex-1 min-h-0 p-3">
                                     {lineId && selectedLine ? (
@@ -489,20 +728,31 @@ export function DayPage() {
                             {/* Night Shift */}
                             <Card
                                 className={cn(
-                                    "flex-1 min-h-0",
+                                    "flex-shrink-0 h-auto",
                                     shiftType === ShiftType.NIGHT && "border-blue-500 border-2",
-                                    selectedBuses[ShiftType.NIGHT] && selectedDrivers[ShiftType.NIGHT] && "border-green-500 border-2",
-                                    (selectedBuses[ShiftType.NIGHT] || selectedDrivers[ShiftType.NIGHT]) && !(selectedBuses[ShiftType.NIGHT] && selectedDrivers[ShiftType.NIGHT]) && "border-yellow-500 border-2",
-                                    lineId && "cursor-pointer hover:bg-muted/50 transition-colors"
+                                    lineId && isShiftRequired(ShiftType.NIGHT) && "cursor-pointer hover:bg-muted/50 transition-colors",
+                                    lineId && !isShiftRequired(ShiftType.NIGHT) && "opacity-40"
                                 )}
                                 onClick={() => {
-                                    if (lineId) {
+                                    if (lineId && isShiftRequired(ShiftType.NIGHT)) {
                                         handleShiftSelect(ShiftType.NIGHT);
                                     }
                                 }}
                             >
                                 <CardHeader className="flex-shrink-0 p-3">
-                                    <CardTitle className="text-sm">Nacht</CardTitle>
+                                    <CardTitle className={cn(
+                                        "text-sm flex items-center justify-between",
+                                        lineId && !isShiftRequired(ShiftType.NIGHT) && "text-muted-foreground"
+                                    )}>
+                                        <span>Nacht (21:00-05:00)</span>
+                                        {lineId && isShiftRequired(ShiftType.NIGHT) && (
+                                            isShiftComplete(ShiftType.NIGHT) ? (
+                                                <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
+                                            ) : (
+                                                <X className="h-4 w-4 text-red-500 ml-2" />
+                                            )
+                                        )}
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="flex-1 min-h-0 p-3">
                                     {lineId && selectedLine ? (
@@ -536,7 +786,7 @@ export function DayPage() {
                 <div className="lg:col-span-1">
                     <div className="flex flex-col gap-4 h-full">
                         {/* Buses Section - Fixed height */}
-                        <Card className="h-[39vh] flex flex-col">
+                        <Card className="h-[37vh] flex flex-col">
                             <CardHeader className="flex-shrink-0 p-3">
                                 <CardTitle className="text-sm flex items-center justify-between">
                                     <div className="flex items-center">
@@ -611,7 +861,7 @@ export function DayPage() {
                         </Card>
 
                         {/* Drivers Section - Fixed height */}
-                        <Card className="h-[39vh] flex flex-col">
+                        <Card className="h-[37vh] flex flex-col">
                             <CardHeader className="flex-shrink-0 p-3">
                                 <CardTitle className="text-sm flex items-center justify-between">
                                     <div className="flex items-center">
