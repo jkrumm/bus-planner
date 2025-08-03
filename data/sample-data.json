@@ -1,0 +1,709 @@
+{
+  "buses": [
+    {
+      "id": "bus-001-a1b2c3d4-1111-2222-3333-444455556666",
+      "licensePlate": "M-BU 123",
+      "size": "medium",
+      "propulsionType": "diesel",
+      "maxRangeKm": 450,
+      "unavailableDates": [
+        "2025-08-15T00:00:00.000Z",
+        "2025-08-16T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "bus-002-b2c3d4e5-2222-3333-4444-555566667777",
+      "licensePlate": "M-BU 456",
+      "size": "large",
+      "propulsionType": "electric",
+      "maxRangeKm": 280,
+      "unavailableDates": []
+    },
+    {
+      "id": "bus-003-c3d4e5f6-3333-4444-5555-666677778888",
+      "licensePlate": "M-BU 789",
+      "size": "small",
+      "propulsionType": "electric",
+      "maxRangeKm": 220,
+      "unavailableDates": ["2025-08-12T00:00:00.000Z"]
+    },
+    {
+      "id": "bus-004-d4e5f6g7-4444-5555-6666-777788889999",
+      "licensePlate": "M-BU 321",
+      "size": "articulated",
+      "propulsionType": "diesel",
+      "maxRangeKm": 600,
+      "unavailableDates": [
+        "2025-08-20T00:00:00.000Z",
+        "2025-08-21T00:00:00.000Z",
+        "2025-08-22T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "bus-005-e5f6g7h8-5555-6666-7777-888899990000",
+      "licensePlate": "M-BU 654",
+      "size": "medium",
+      "propulsionType": "electric",
+      "maxRangeKm": 320,
+      "unavailableDates": []
+    },
+    {
+      "id": "bus-006-f6g7h8i9-6666-7777-8888-999900001111",
+      "licensePlate": "M-BU 987",
+      "size": "large",
+      "propulsionType": "diesel",
+      "maxRangeKm": 520,
+      "unavailableDates": ["2025-08-08T00:00:00.000Z"]
+    },
+    {
+      "id": "bus-007-g7h8i9j0-7777-8888-9999-000011112222",
+      "licensePlate": "M-BU 147",
+      "size": "small",
+      "propulsionType": "diesel",
+      "maxRangeKm": 380,
+      "unavailableDates": []
+    },
+    {
+      "id": "bus-008-h8i9j0k1-8888-9999-0000-111122223333",
+      "licensePlate": "M-BU 258",
+      "size": "medium",
+      "propulsionType": "electric",
+      "maxRangeKm": 290,
+      "unavailableDates": [
+        "2025-08-25T00:00:00.000Z",
+        "2025-08-26T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "bus-009-i9j0k1l2-9999-0000-1111-222233334444",
+      "licensePlate": "M-BU 369",
+      "size": "articulated",
+      "propulsionType": "electric",
+      "maxRangeKm": 350,
+      "unavailableDates": []
+    },
+    {
+      "id": "bus-010-j0k1l2m3-0000-1111-2222-333344445555",
+      "licensePlate": "M-BU 741",
+      "size": "large",
+      "propulsionType": "diesel",
+      "maxRangeKm": 480,
+      "unavailableDates": ["2025-08-18T00:00:00.000Z"]
+    },
+    {
+      "id": "bus-011-k1l2m3n4-1111-2222-3333-444455556666",
+      "licensePlate": "M-BU 852",
+      "size": "small",
+      "propulsionType": "electric",
+      "maxRangeKm": 200,
+      "unavailableDates": [
+        "2025-08-30T00:00:00.000Z",
+        "2025-08-31T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "bus-012-l2m3n4o5-2222-3333-4444-555566667777",
+      "licensePlate": "M-BU 963",
+      "size": "medium",
+      "propulsionType": "diesel",
+      "maxRangeKm": 420,
+      "unavailableDates": []
+    },
+    {
+      "id": "bus-013-m3n4o5p6-3333-4444-5555-666677778888",
+      "licensePlate": "M-BU 159",
+      "size": "large",
+      "propulsionType": "electric",
+      "maxRangeKm": 310,
+      "unavailableDates": [
+        "2025-08-10T00:00:00.000Z",
+        "2025-08-11T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "bus-014-n4o5p6q7-4444-5555-6666-777788889999",
+      "licensePlate": "M-BU 357",
+      "size": "articulated",
+      "propulsionType": "diesel",
+      "maxRangeKm": 650,
+      "unavailableDates": []
+    },
+    {
+      "id": "bus-015-o5p6q7r8-5555-6666-7777-888899990000",
+      "licensePlate": "M-BU 486",
+      "size": "small",
+      "propulsionType": "diesel",
+      "maxRangeKm": 360,
+      "unavailableDates": ["2025-08-14T00:00:00.000Z"]
+    },
+    {
+      "id": "bus-016-p6q7r8s9-6666-7777-8888-999900001111",
+      "licensePlate": "M-BU 672",
+      "size": "medium",
+      "propulsionType": "electric",
+      "maxRangeKm": 340,
+      "unavailableDates": []
+    },
+    {
+      "id": "bus-017-q7r8s9t0-7777-8888-9999-000011112222",
+      "licensePlate": "M-BU 815",
+      "size": "large",
+      "propulsionType": "diesel",
+      "maxRangeKm": 500,
+      "unavailableDates": [
+        "2025-08-28T00:00:00.000Z",
+        "2025-08-29T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "bus-018-r8s9t0u1-8888-9999-0000-111122223333",
+      "licensePlate": "M-BU 924",
+      "size": "small",
+      "propulsionType": "electric",
+      "maxRangeKm": 240,
+      "unavailableDates": ["2025-08-05T00:00:00.000Z"]
+    },
+    {
+      "id": "bus-019-s9t0u1v2-9999-0000-1111-222233334444",
+      "licensePlate": "M-BU 108",
+      "size": "articulated",
+      "propulsionType": "electric",
+      "maxRangeKm": 380,
+      "unavailableDates": []
+    },
+    {
+      "id": "bus-020-t0u1v2w3-0000-1111-2222-333344445555",
+      "licensePlate": "M-BU 537",
+      "size": "medium",
+      "propulsionType": "diesel",
+      "maxRangeKm": 440,
+      "unavailableDates": [
+        "2025-08-23T00:00:00.000Z",
+        "2025-08-24T00:00:00.000Z"
+      ]
+    }
+  ],
+  "drivers": [
+    {
+      "id": "7f4eb926-3926-467e-aea8-3f285edead4f",
+      "fullName": "Werner Müller",
+      "weeklyHours": 40,
+      "availableDays": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      "preferredShifts": ["morning"],
+      "shiftsToAvoid": ["night"],
+      "unavailableDates": []
+    },
+    {
+      "id": "8g5fc037-4037-578f-bfb9-4g396fefbe5g",
+      "fullName": "Anna Schmidt",
+      "weeklyHours": 35,
+      "availableDays": [
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday"
+      ],
+      "preferredShifts": ["afternoon"],
+      "shiftsToAvoid": [],
+      "unavailableDates": [
+        "2025-08-18T00:00:00.000Z",
+        "2025-08-19T00:00:00.000Z",
+        "2025-08-20T00:00:00.000Z",
+        "2025-08-21T00:00:00.000Z",
+        "2025-08-22T00:00:00.000Z",
+        "2025-08-23T00:00:00.000Z",
+        "2025-08-24T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "9h6gd148-5148-689g-cfc0-5h407ghghc6h",
+      "fullName": "Klaus Weber",
+      "weeklyHours": 30,
+      "availableDays": ["friday", "saturday", "sunday"],
+      "preferredShifts": ["afternoon"],
+      "shiftsToAvoid": ["morning"],
+      "unavailableDates": [
+        "2025-08-15T00:00:00.000Z",
+        "2025-08-16T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "a1b2c3d4-1234-5678-9abc-def123456789",
+      "fullName": "Franz Huber",
+      "weeklyHours": 15,
+      "availableDays": ["saturday", "sunday"],
+      "preferredShifts": ["morning", "afternoon"],
+      "shiftsToAvoid": ["night"],
+      "unavailableDates": []
+    },
+    {
+      "id": "b2c3d4e5-2345-6789-abcd-ef1234567890",
+      "fullName": "Gisela Bauer",
+      "weeklyHours": 38,
+      "availableDays": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday"
+      ],
+      "preferredShifts": ["morning", "afternoon"],
+      "shiftsToAvoid": ["afternoon", "night"],
+      "unavailableDates": [
+        "2025-08-25T00:00:00.000Z",
+        "2025-08-26T00:00:00.000Z",
+        "2025-08-27T00:00:00.000Z",
+        "2025-08-28T00:00:00.000Z",
+        "2025-08-29T00:00:00.000Z",
+        "2025-08-30T00:00:00.000Z",
+        "2025-08-31T00:00:00.000Z",
+        "2025-09-01T00:00:00.000Z",
+        "2025-09-02T00:00:00.000Z",
+        "2025-09-03T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "c3d4e5f6-3456-789a-bcde-f12345678901",
+      "fullName": "Ludwig Mayer",
+      "weeklyHours": 20,
+      "availableDays": ["monday", "wednesday", "friday"],
+      "preferredShifts": ["night"],
+      "shiftsToAvoid": ["morning"],
+      "unavailableDates": ["2025-08-08T00:00:00.000Z"]
+    },
+    {
+      "id": "d4e5f6g7-4567-89ab-cdef-123456789012",
+      "fullName": "Theresa Zimmermann",
+      "weeklyHours": 42,
+      "availableDays": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "preferredShifts": ["afternoon", "afternoon"],
+      "shiftsToAvoid": [],
+      "unavailableDates": []
+    },
+    {
+      "id": "e5f6g7h8-5678-9abc-def1-234567890123",
+      "fullName": "Sepp Obermeier",
+      "weeklyHours": 12,
+      "availableDays": ["saturday", "sunday"],
+      "preferredShifts": ["morning"],
+      "shiftsToAvoid": ["afternoon", "night"],
+      "unavailableDates": [
+        "2025-08-10T00:00:00.000Z",
+        "2025-08-17T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "f6g7h8i9-6789-abcd-ef12-345678901234",
+      "fullName": "Brigitte Wiesinger",
+      "weeklyHours": 25,
+      "availableDays": ["tuesday", "thursday", "saturday"],
+      "preferredShifts": ["afternoon"],
+      "shiftsToAvoid": ["night"],
+      "unavailableDates": []
+    },
+    {
+      "id": "g7h8i9j0-789a-bcde-f123-456789012345",
+      "fullName": "Hans Lechner",
+      "weeklyHours": 40,
+      "availableDays": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      "preferredShifts": ["morning", "afternoon"],
+      "shiftsToAvoid": ["night"],
+      "unavailableDates": [
+        "2025-08-11T00:00:00.000Z",
+        "2025-08-12T00:00:00.000Z",
+        "2025-08-13T00:00:00.000Z",
+        "2025-08-14T00:00:00.000Z",
+        "2025-08-15T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "h8i9j0k1-89ab-cdef-1234-56789012345a",
+      "fullName": "Rosemarie Steinberger",
+      "weeklyHours": 18,
+      "availableDays": ["friday", "saturday", "sunday"],
+      "preferredShifts": ["afternoon", "night"],
+      "shiftsToAvoid": ["morning"],
+      "unavailableDates": []
+    },
+    {
+      "id": "i9j0k1l2-9abc-def1-2345-6789012345ab",
+      "fullName": "Alois Schreiner",
+      "weeklyHours": 35,
+      "availableDays": ["monday", "wednesday", "friday", "saturday", "sunday"],
+      "preferredShifts": ["morning"],
+      "shiftsToAvoid": ["night"],
+      "unavailableDates": [
+        "2025-08-22T00:00:00.000Z",
+        "2025-08-23T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "j0k1l2m3-abcd-ef12-3456-789012345abc",
+      "fullName": "Monika Kellner",
+      "weeklyHours": 8,
+      "availableDays": ["sunday"],
+      "preferredShifts": ["afternoon"],
+      "shiftsToAvoid": ["morning", "afternoon", "night"],
+      "unavailableDates": ["2025-08-31T00:00:00.000Z"]
+    },
+    {
+      "id": "k1l2m3n4-bcde-f123-4567-89012345abcd",
+      "fullName": "Georg Rauch",
+      "weeklyHours": 32,
+      "availableDays": [
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday"
+      ],
+      "preferredShifts": ["afternoon"],
+      "shiftsToAvoid": ["morning"],
+      "unavailableDates": []
+    },
+    {
+      "id": "l2m3n4o5-cdef-1234-5678-9012345abcde",
+      "fullName": "Elisabeth Gruber",
+      "weeklyHours": 40,
+      "availableDays": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "preferredShifts": ["night"],
+      "shiftsToAvoid": [],
+      "unavailableDates": [
+        "2025-09-08T00:00:00.000Z",
+        "2025-09-09T00:00:00.000Z",
+        "2025-09-10T00:00:00.000Z",
+        "2025-09-11T00:00:00.000Z",
+        "2025-09-12T00:00:00.000Z",
+        "2025-09-13T00:00:00.000Z",
+        "2025-09-14T00:00:00.000Z",
+        "2025-09-15T00:00:00.000Z",
+        "2025-09-16T00:00:00.000Z",
+        "2025-09-17T00:00:00.000Z",
+        "2025-09-18T00:00:00.000Z",
+        "2025-09-19T00:00:00.000Z",
+        "2025-09-20T00:00:00.000Z",
+        "2025-09-21T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "m3n4o5p6-def1-2345-6789-012345abcdef",
+      "fullName": "Max Fuchs",
+      "weeklyHours": 14,
+      "availableDays": ["monday", "tuesday"],
+      "preferredShifts": ["morning", "afternoon"],
+      "shiftsToAvoid": ["afternoon", "night"],
+      "unavailableDates": [
+        "2025-08-05T00:00:00.000Z",
+        "2025-08-06T00:00:00.000Z",
+        "2025-08-07T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "n4o5p6q7-ef12-3456-789a-12345abcdef0",
+      "fullName": "Ingrid Pichler",
+      "weeklyHours": 28,
+      "availableDays": ["wednesday", "thursday", "friday", "saturday"],
+      "preferredShifts": ["afternoon", "afternoon"],
+      "shiftsToAvoid": ["night"],
+      "unavailableDates": []
+    },
+    {
+      "id": "o5p6q7r8-f123-4567-89ab-2345abcdef01",
+      "fullName": "Johann Kaltenbrunner",
+      "weeklyHours": 36,
+      "availableDays": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "sunday"
+      ],
+      "preferredShifts": ["morning", "afternoon"],
+      "shiftsToAvoid": [],
+      "unavailableDates": [
+        "2025-08-28T00:00:00.000Z",
+        "2025-08-29T00:00:00.000Z",
+        "2025-08-30T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "p6q7r8s9-1234-5678-9abc-345abcdef012",
+      "fullName": "Waltraud Niedermeier",
+      "weeklyHours": 22,
+      "availableDays": ["thursday", "friday", "saturday", "sunday"],
+      "preferredShifts": ["morning"],
+      "shiftsToAvoid": ["afternoon", "night"],
+      "unavailableDates": [
+        "2025-08-14T00:00:00.000Z",
+        "2025-08-21T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "q7r8s9t0-2345-6789-abcd-45abcdef0123",
+      "fullName": "Benedikt Stallinger",
+      "weeklyHours": 10,
+      "availableDays": ["saturday"],
+      "preferredShifts": ["night"],
+      "shiftsToAvoid": ["morning", "afternoon", "afternoon"],
+      "unavailableDates": []
+    },
+    {
+      "id": "r8s9t0u1-3456-789a-bcde-5abcdef01234",
+      "fullName": "Christa Wimmer",
+      "weeklyHours": 33,
+      "availableDays": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      "preferredShifts": ["afternoon"],
+      "shiftsToAvoid": ["night"],
+      "unavailableDates": [
+        "2025-08-04T00:00:00.000Z",
+        "2025-08-05T00:00:00.000Z",
+        "2025-08-06T00:00:00.000Z",
+        "2025-08-07T00:00:00.000Z",
+        "2025-08-08T00:00:00.000Z",
+        "2025-08-09T00:00:00.000Z",
+        "2025-08-10T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "s9t0u1v2-4567-89ab-cdef-abcdef012345",
+      "fullName": "Florian Brandner",
+      "weeklyHours": 16,
+      "availableDays": ["friday", "saturday", "sunday"],
+      "preferredShifts": ["afternoon", "night"],
+      "shiftsToAvoid": ["morning"],
+      "unavailableDates": [
+        "2025-08-09T00:00:00.000Z",
+        "2025-08-16T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "t0u1v2w3-5678-9abc-def0-bcdef0123456",
+      "fullName": "Irmgard Stoiber",
+      "weeklyHours": 29,
+      "availableDays": [
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "saturday",
+        "sunday"
+      ],
+      "preferredShifts": ["morning", "afternoon"],
+      "shiftsToAvoid": ["night"],
+      "unavailableDates": []
+    },
+    {
+      "id": "u1v2w3x4-6789-abcd-ef01-cdef01234567",
+      "fullName": "Andreas Seidl",
+      "weeklyHours": 39,
+      "availableDays": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday"
+      ],
+      "preferredShifts": ["morning", "afternoon", "afternoon"],
+      "shiftsToAvoid": ["night"],
+      "unavailableDates": [
+        "2025-09-01T00:00:00.000Z",
+        "2025-09-02T00:00:00.000Z",
+        "2025-09-03T00:00:00.000Z",
+        "2025-09-04T00:00:00.000Z",
+        "2025-09-05T00:00:00.000Z"
+      ]
+    },
+    {
+      "id": "v2w3x4y5-789a-bcde-f012-def012345678",
+      "fullName": "Marianne Ebner",
+      "weeklyHours": 6,
+      "availableDays": ["sunday"],
+      "preferredShifts": ["morning"],
+      "shiftsToAvoid": ["afternoon", "afternoon", "night"],
+      "unavailableDates": [
+        "2025-08-17T00:00:00.000Z",
+        "2025-08-24T00:00:00.000Z"
+      ]
+    }
+  ],
+  "lines": [
+    {
+      "id": "b19309e2-dcd8-4162-8639-d553e276e1e5",
+      "lineNumber": "140",
+      "routeName": "Pasing - Allach - Untermenzing",
+      "distanceKm": 12,
+      "durationMinutes": 35,
+      "compatibleBusSizes": ["small", "medium"],
+      "weeklySchedule": {
+        "monday": { "start": "06:00", "end": "22:00" },
+        "tuesday": { "start": "06:00", "end": "22:00" },
+        "wednesday": { "start": "06:00", "end": "22:00" },
+        "thursday": { "start": "06:00", "end": "22:00" },
+        "friday": { "start": "06:00", "end": "22:00" },
+        "saturday": { "start": "08:00", "end": "20:00" },
+        "sunday": { "start": "09:00", "end": "19:00" }
+      },
+      "isActive": true
+    },
+    {
+      "id": "c20410f3-ede9-5273-9740-e664f387f2f6",
+      "lineNumber": "841",
+      "routeName": "Germering - Pasing Bahnhof",
+      "distanceKm": 18,
+      "durationMinutes": 45,
+      "compatibleBusSizes": ["medium", "large"],
+      "weeklySchedule": {
+        "monday": { "start": "05:30", "end": "23:30" },
+        "tuesday": { "start": "05:30", "end": "23:30" },
+        "wednesday": { "start": "05:30", "end": "23:30" },
+        "thursday": { "start": "05:30", "end": "23:30" },
+        "friday": { "start": "05:30", "end": "00:30" },
+        "saturday": { "start": "06:30", "end": "00:30" },
+        "sunday": { "start": "08:00", "end": "22:00" }
+      },
+      "isActive": true
+    },
+    {
+      "id": "d31521g4-fef0-6384-a851-f775g498g3g7",
+      "lineNumber": "873",
+      "routeName": "Fürstenfeldbruck - Germering Stadtmitte",
+      "distanceKm": 22,
+      "durationMinutes": 55,
+      "compatibleBusSizes": ["medium", "large"],
+      "weeklySchedule": {
+        "monday": { "start": "06:00", "end": "20:00" },
+        "tuesday": { "start": "06:00", "end": "20:00" },
+        "wednesday": { "start": "06:00", "end": "20:00" },
+        "thursday": { "start": "06:00", "end": "20:00" },
+        "friday": { "start": "06:00", "end": "20:00" }
+      },
+      "isActive": true
+    },
+    {
+      "id": "e42632h5-ghg1-7495-b962-g886h509h4h8",
+      "lineNumber": "164",
+      "routeName": "Obermenzing - Allach Nord",
+      "distanceKm": 8,
+      "durationMinutes": 25,
+      "compatibleBusSizes": ["small", "medium"],
+      "weeklySchedule": {
+        "saturday": { "start": "07:00", "end": "18:00" },
+        "sunday": { "start": "09:00", "end": "17:00" }
+      },
+      "isActive": true
+    },
+    {
+      "id": "f53743i6-hih2-8506-ca73-h997i610i5i9",
+      "lineNumber": "N40",
+      "routeName": "Nachtlinie: Pasing - Germering",
+      "distanceKm": 16,
+      "durationMinutes": 40,
+      "compatibleBusSizes": ["medium"],
+      "weeklySchedule": {
+        "friday": { "start": "23:00", "end": "05:00" },
+        "saturday": { "start": "23:00", "end": "05:00" }
+      },
+      "isActive": true
+    },
+    {
+      "id": "g64854j7-iji3-9617-db84-ia08j721j6j0",
+      "lineNumber": "145",
+      "routeName": "Obermenzing S-Bahn - Lochhausen",
+      "distanceKm": 14,
+      "durationMinutes": 30,
+      "compatibleBusSizes": ["small", "medium"],
+      "weeklySchedule": {
+        "monday": { "start": "07:00", "end": "19:00" },
+        "tuesday": { "start": "07:00", "end": "19:00" },
+        "wednesday": { "start": "07:00", "end": "19:00" },
+        "thursday": { "start": "07:00", "end": "19:00" },
+        "friday": { "start": "07:00", "end": "19:00" }
+      },
+      "isActive": true
+    },
+    {
+      "id": "h75965k8-jkj4-0728-ec95-jb19k832k7k1",
+      "lineNumber": "872",
+      "routeName": "Fürstenfeldbruck Bahnhof - Pasing",
+      "distanceKm": 25,
+      "durationMinutes": 65,
+      "compatibleBusSizes": ["large"],
+      "weeklySchedule": {
+        "monday": { "start": "05:00", "end": "08:00" },
+        "tuesday": { "start": "05:00", "end": "08:00" },
+        "wednesday": { "start": "05:00", "end": "08:00" },
+        "thursday": { "start": "05:00", "end": "08:00" },
+        "friday": { "start": "05:00", "end": "08:00" }
+      },
+      "isActive": true
+    },
+    {
+      "id": "i86076l9-klk5-1839-fd06-kc20l943l8l2",
+      "lineNumber": "260",
+      "routeName": "Allach - Karlsfeld - Dachau",
+      "distanceKm": 20,
+      "durationMinutes": 50,
+      "compatibleBusSizes": ["medium", "large"],
+      "weeklySchedule": {
+        "monday": { "start": "06:30", "end": "21:30" },
+        "tuesday": { "start": "06:30", "end": "21:30" },
+        "wednesday": { "start": "06:30", "end": "21:30" },
+        "thursday": { "start": "06:30", "end": "21:30" },
+        "friday": { "start": "06:30", "end": "21:30" },
+        "saturday": { "start": "08:00", "end": "19:00" }
+      },
+      "isActive": true
+    },
+    {
+      "id": "j97187m0-lml6-294a-ge17-ld31m054m9m3",
+      "lineNumber": "143",
+      "routeName": "Schulbus: Germering Schulzentrum - Unterpfaffenhofen",
+      "distanceKm": 9,
+      "durationMinutes": 20,
+      "compatibleBusSizes": ["small", "medium"],
+      "weeklySchedule": {
+        "monday": { "start": "12:30", "end": "16:30" },
+        "tuesday": { "start": "12:30", "end": "16:30" },
+        "wednesday": { "start": "12:30", "end": "16:30" },
+        "thursday": { "start": "12:30", "end": "16:30" },
+        "friday": { "start": "12:30", "end": "15:30" }
+      },
+      "isActive": true
+    },
+    {
+      "id": "k08298n1-mnm7-305b-hf28-me42n165n0n4",
+      "lineNumber": "X99",
+      "routeName": "Express: München Hbf - Fürstenfeldbruck",
+      "distanceKm": 35,
+      "durationMinutes": 45,
+      "compatibleBusSizes": ["large"],
+      "weeklySchedule": {},
+      "isActive": false
+    }
+  ],
+  "assignments": [],
+  "metadata": {
+    "version": "1.0.0",
+    "lastSaved": "2025-08-02T11:17:36.947Z",
+    "created": "2025-08-02T08:57:36.827Z"
+  }
+}
