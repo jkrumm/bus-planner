@@ -12,7 +12,7 @@ export function useGetDrivers() {
       if (!response.ok) {
         throw new Error('Failed to fetch drivers');
       }
-      return response.json();
+      return (await response.json() as Driver[]);
     }
   });
 }

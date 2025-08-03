@@ -12,7 +12,7 @@ export function useGetLines() {
       if (!response.ok) {
         throw new Error('Failed to fetch lines');
       }
-      return response.json();
+      return (await response.json()) as Line[];
     }
   });
 }

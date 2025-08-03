@@ -12,7 +12,7 @@ export function useGetBuses() {
       if (!response.ok) {
         throw new Error('Failed to fetch buses');
       }
-      return response.json();
+      return (await response.json()) as Bus[];
     }
   });
 }
