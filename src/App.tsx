@@ -20,7 +20,7 @@ import { DataPage } from '@/pages/settings/DataPage';
 
 import './index.css';
 import { DriverForm } from '@/pages/drivers/DriverForm.tsx';
-import {DayPage} from "@/pages/assignments/DayPage.tsx";
+import { DayPage } from '@/pages/assignments/DayPage.tsx';
 
 // Main App component with routing
 export function App() {
@@ -28,33 +28,33 @@ export function App() {
     <>
       <Router>
         <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b">
-            <div className="flex items-center gap-2 px-3">
-              <SidebarTrigger />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <AppBreadcrumb />
-            </div>
-            <BackupHistory />
-          </header>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/busses" element={<BusesPage />} />
-            <Route path="/busses/new" element={<BusForm />} />
-            <Route path="/busses/edit/:id" element={<BusForm />} />
-            <Route path="/lines" element={<LinesPage />} />
-            <Route path="/lines/new" element={<LineForm />} />
-            <Route path="/lines/edit/:id" element={<LineForm />} />
-            <Route path="/drivers" element={<DriversPage />} />
-            <Route path="/drivers/new" element={<DriverForm />} />
-            <Route path="/drivers/edit/:id" element={<DriverForm />} />
-            <Route path="/settings/data" element={<DataPage />} />
-            <Route path="/assignments/day/:date" element={<DayPage />} />
-          </Routes>
-        </SidebarInset>
-      </SidebarProvider>
-    </Router>
+          <AppSidebar />
+          <SidebarInset>
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b">
+              <div className="flex items-center gap-2 px-3">
+                <SidebarTrigger />
+                <Separator orientation="vertical" className="mr-2 h-4" />
+                <AppBreadcrumb />
+              </div>
+              <BackupHistory />
+            </header>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/busses" element={<BusesPage />} />
+              <Route path="/busses/new" element={<BusForm />} />
+              <Route path="/busses/edit/:id" element={<BusForm />} />
+              <Route path="/lines" element={<LinesPage />} />
+              <Route path="/lines/new" element={<LineForm />} />
+              <Route path="/lines/edit/:id" element={<LineForm />} />
+              <Route path="/drivers" element={<DriversPage />} />
+              <Route path="/drivers/new" element={<DriverForm />} />
+              <Route path="/drivers/edit/:id" element={<DriverForm />} />
+              <Route path="/settings/data" element={<DataPage />} />
+              <Route path="/assignments/day/:date" element={<DayPage />} />
+            </Routes>
+          </SidebarInset>
+        </SidebarProvider>
+      </Router>
     </>
   );
 }

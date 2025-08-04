@@ -47,7 +47,8 @@ export const SETTINGS_API = {
   BACKUP: `${API_BASE_URL}/settings/backup`,
   GET_BACKUPS: `${API_BASE_URL}/settings/backups`,
   GET_CURRENT_BACKUP: `${API_BASE_URL}/settings/current-backup`,
-  RESTORE_BACKUP: (filename: string) => `${API_BASE_URL}/settings/backups/restore/${filename}`,
+  RESTORE_BACKUP: (filename: string) =>
+    `${API_BASE_URL}/settings/backups/restore/${filename}`,
 };
 
 // Stats endpoints

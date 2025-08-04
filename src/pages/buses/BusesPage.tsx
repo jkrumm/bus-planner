@@ -12,11 +12,7 @@ export function BusesPage() {
   const navigate = useNavigate();
 
   // Fetch buses with centralized query hook
-  const { 
-    data: buses = [], 
-    isLoading, 
-    error 
-  } = useGetBuses();
+  const { data: buses = [], isLoading, error } = useGetBuses();
 
   // Define columns for the data table
   const columns: ColumnDef<Bus>[] = [

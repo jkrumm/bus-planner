@@ -11,12 +11,12 @@ export function useGetBackups() {
       if (!response.ok) {
         throw new Error('Failed to fetch backups');
       }
-      
+
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error('Server returned non-JSON response');
       }
-      
+
       const data = await response.json();
 
       if (!data || !Array.isArray(data)) {
@@ -25,7 +25,7 @@ export function useGetBackups() {
       }
 
       return data;
-    }
+    },
   });
 }
 
@@ -54,7 +54,7 @@ export function useCreateBackup() {
     onSuccess: () => {
       // Invalidate and refetch the backups list
       queryClient.invalidateQueries({ queryKey: queryKeys.backups.all });
-    }
+    },
   });
 }
 
@@ -65,7 +65,7 @@ export function useRestoreBackup() {
   return useMutation({
     mutationFn: async (filename: string) => {
       console.log('Restoring backup:', filename);
-      
+
       const response = await fetch(SETTINGS_API.RESTORE_BACKUP(filename), {
         method: 'POST',
         headers: {
@@ -88,27 +88,29 @@ export function useRestoreBackup() {
       if (!contentType || !contentType.includes('application/json')) {
         const responseText = await response.text();
         console.error('Non-JSON response from server:', responseText);
-        throw new Error('Server returned non-JSON response. Check server logs.');
+        throw new Error(
+          'Server returned non-JSON response. Check server logs.'
+        );
       }
 
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.message || 'Failed to restore backup');
       }
 
       return result;
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       console.log('Backup restored successfully:', data.message);
       // Invalidate all queries since restoring a backup affects all data
       queryClient.invalidateQueries();
       // Reload the page to reflect the changes
       window.location.reload();
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Error restoring backup:', error);
-    }
+    },
   });
 }
 
@@ -124,11 +126,13 @@ export function useLoadSampleData() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Fehler beim Laden der Beispieldaten');
+        throw new Error(
+          errorData.message || 'Fehler beim Laden der Beispieldaten'
+        );
       }
 
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.message || 'Failed to load sample data');
       }
@@ -140,7 +144,7 @@ export function useLoadSampleData() {
       queryClient.invalidateQueries();
       // Reload the page to reflect the changes after a short delay
       // This is handled by the component's onSuccess callback
-    }
+    },
   });
 }
 
@@ -156,11 +160,13 @@ export function useResetData() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Fehler beim Zurücksetzen der Daten');
+        throw new Error(
+          errorData.message || 'Fehler beim Zurücksetzen der Daten'
+        );
       }
 
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.message || 'Failed to reset data');
       }
@@ -172,6 +178,6 @@ export function useResetData() {
       queryClient.invalidateQueries();
       // Reload the page to reflect the changes after a short delay
       // This is handled by the component's onSuccess callback
-    }
+    },
   });
 }

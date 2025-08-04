@@ -13,8 +13,10 @@ export function useGetDrivers() {
       if (!response.ok) {
         throw new Error('Failed to fetch drivers');
       }
-      return ((await response.json()) as DriverJSON[]).map(driver => Driver.fromJSON(driver));
-    }
+      return ((await response.json()) as DriverJSON[]).map(driver =>
+        Driver.fromJSON(driver)
+      );
+    },
   });
 }
 
@@ -103,7 +105,7 @@ export function useCreateDriver() {
       queryClient.invalidateQueries({ queryKey: queryKeys.drivers.all });
       // Invalidate backups list since a modification was made
       queryClient.invalidateQueries({ queryKey: queryKeys.backups.all });
-    }
+    },
   });
 }
 
@@ -140,7 +142,7 @@ export function useUpdateDriver(id: string | undefined) {
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Update the cache for the individual driver
       if (id) {
         queryClient.setQueryData(queryKeys.drivers.details(id), data);
@@ -149,7 +151,7 @@ export function useUpdateDriver(id: string | undefined) {
       queryClient.invalidateQueries({ queryKey: queryKeys.drivers.all });
       // Invalidate backups list since a modification was made
       queryClient.invalidateQueries({ queryKey: queryKeys.backups.all });
-    }
+    },
   });
 }
 
@@ -172,6 +174,6 @@ export function useDeleteDriver() {
       queryClient.invalidateQueries({ queryKey: queryKeys.drivers.all });
       // Invalidate backups list since a modification was made
       queryClient.invalidateQueries({ queryKey: queryKeys.backups.all });
-    }
+    },
   });
 }

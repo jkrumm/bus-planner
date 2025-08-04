@@ -9,12 +9,12 @@ import { Line } from '../models/entities/Line.js';
 
 export interface ConflictWarning {
   type:
-      | 'double_booking'
-      | 'bus_size_mismatch'
-      | 'insufficient_range'
-      | 'unavailable_resource'
-      | 'preference_violation'
-      | 'weekly_hours_exceeded';
+    | 'double_booking'
+    | 'bus_size_mismatch'
+    | 'insufficient_range'
+    | 'unavailable_resource'
+    | 'preference_violation'
+    | 'weekly_hours_exceeded';
   message: string;
   severity: 'warning' | 'error';
 }
@@ -38,7 +38,7 @@ export class PlanningService {
 
   constructor(dataFile?: string) {
     this.state = new AppState(dataFile);
-    
+
     // Set up the callback to clear backup tracking when data changes
     this.state.setOnDataChangeCallback(() => {
       this.currentBackupFilename = null;
@@ -122,29 +122,29 @@ export class PlanningService {
       const files = await fs.promises.readdir(backupDir);
 
       const backupFiles = files
-          .filter(file => file.startsWith('backup-') && file.endsWith('.json'))
-          .map(filename => {
-            const timestampStr = filename
-                .replace('backup-', '')
-                .replace('.json', '');
-            const timestamp = new Date(
-                timestampStr.replace(/-/g, (match, index) => {
-                  if (index === 13 || index === 16) return ':';
-                  if (index === 10) return 'T';
-                  if (index === 19) return '.';
-                  return match;
-                })
-            );
+        .filter(file => file.startsWith('backup-') && file.endsWith('.json'))
+        .map(filename => {
+          const timestampStr = filename
+            .replace('backup-', '')
+            .replace('.json', '');
+          const timestamp = new Date(
+            timestampStr.replace(/-/g, (match, index) => {
+              if (index === 13 || index === 16) return ':';
+              if (index === 10) return 'T';
+              if (index === 19) return '.';
+              return match;
+            })
+          );
 
-            return {
-              filename,
-              path: path.join(backupDir, filename),
-              timestamp,
-              displayDate: timestamp.toLocaleString('de-DE'),
-              isCurrent: this.currentBackupFilename === filename
-            };
-          })
-          .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+          return {
+            filename,
+            path: path.join(backupDir, filename),
+            timestamp,
+            displayDate: timestamp.toLocaleString('de-DE'),
+            isCurrent: this.currentBackupFilename === filename,
+          };
+        })
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
       return backupFiles;
     } catch (error) {
@@ -159,18 +159,26 @@ export class PlanningService {
     }
 
     const backups = await this.getBackups();
-    const current = backups.find(b => b.filename === this.currentBackupFilename);
+    const current = backups.find(
+      b => b.filename === this.currentBackupFilename
+    );
     return current || null;
   }
 
   async createAssignment(
-      date: Date,
-      shift: ShiftType,
-      lineId: string,
-      busId: string,
-      driverId: string
+    date: Date,
+    shift: ShiftType,
+    lineId: string,
+    busId: string,
+    driverId: string
   ): Promise<{ assignment?: Assignment; validation: AssignmentValidation }> {
-    const validation = this.validateAssignment(date, shift, lineId, busId, driverId);
+    const validation = this.validateAssignment(
+      date,
+      shift,
+      lineId,
+      busId,
+      driverId
+    );
     const assignment = new Assignment(date, shift, lineId, busId, driverId);
 
     await this.state.createAssignment(assignment);
@@ -180,11 +188,11 @@ export class PlanningService {
   }
 
   validateAssignment(
-      date: Date,
-      shift: ShiftType,
-      lineId: string,
-      busId: string,
-      driverId: string
+    date: Date,
+    shift: ShiftType,
+    lineId: string,
+    busId: string,
+    driverId: string
   ): AssignmentValidation {
     const warnings: ConflictWarning[] = [];
 
@@ -257,8 +265,8 @@ export class PlanningService {
     }
 
     if (
-        driver.preferredShifts.length > 0 &&
-        !driver.hasShiftPreference(shift)
+      driver.preferredShifts.length > 0 &&
+      !driver.hasShiftPreference(shift)
     ) {
       warnings.push({
         type: 'preference_violation',

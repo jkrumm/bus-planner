@@ -33,13 +33,13 @@ import {
   History,
 } from 'lucide-react';
 
-import type {Backup} from '@/services/PlanningService';
-import { 
-  useGetBackups, 
-  useCreateBackup, 
-  useRestoreBackup, 
-  useLoadSampleData, 
-  useResetData 
+import type { Backup } from '@/services/PlanningService';
+import {
+  useGetBackups,
+  useCreateBackup,
+  useRestoreBackup,
+  useLoadSampleData,
+  useResetData,
 } from '@/api/queries/backups';
 
 export function DataPage() {
@@ -54,7 +54,7 @@ export function DataPage() {
     data: backups = [],
     isLoading: isBackupsLoading,
     error: backupsError,
-    refetch: refetchBackups
+    refetch: refetchBackups,
   } = useGetBackups();
 
   // Create backup mutation
@@ -138,11 +138,12 @@ export function DataPage() {
   };
 
   // Combined loading state
-  const isLoading = isBackupsLoading || 
-                   createBackupMutation.isPending || 
-                   restoreBackupMutation.isPending || 
-                   loadSampleDataMutation.isPending || 
-                   resetDataMutation.isPending;
+  const isLoading =
+    isBackupsLoading ||
+    createBackupMutation.isPending ||
+    restoreBackupMutation.isPending ||
+    loadSampleDataMutation.isPending ||
+    resetDataMutation.isPending;
 
   return (
     <div className="container p-6">
@@ -279,12 +280,14 @@ export function DataPage() {
                 onClick={() => {
                   createBackupMutation.mutate(undefined, {
                     onSuccess: handleCreateBackupSuccess,
-                    onError: handleCreateBackupError
+                    onError: handleCreateBackupError,
                   });
                 }}
                 disabled={isLoading}
               >
-                {createBackupMutation.isPending ? 'Wird erstellt...' : 'Backup erstellen'}
+                {createBackupMutation.isPending
+                  ? 'Wird erstellt...'
+                  : 'Backup erstellen'}
               </Button>
               <Button
                 variant="outline"
@@ -314,17 +317,19 @@ export function DataPage() {
                 Abbrechen
               </Button>
             </DialogClose>
-            <Button 
+            <Button
               onClick={() => {
                 loadSampleDataMutation.mutate(undefined, {
                   onSuccess: handleLoadSampleDataSuccess,
                   onError: handleLoadSampleDataError,
-                  onSettled: () => setIsLoadDialogOpen(false)
+                  onSettled: () => setIsLoadDialogOpen(false),
                 });
-              }} 
+              }}
               disabled={isLoading}
             >
-              {loadSampleDataMutation.isPending ? 'Wird geladen...' : 'Bestätigen'}
+              {loadSampleDataMutation.isPending
+                ? 'Wird geladen...'
+                : 'Bestätigen'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -352,12 +357,14 @@ export function DataPage() {
                 resetDataMutation.mutate(undefined, {
                   onSuccess: handleResetDataSuccess,
                   onError: handleResetDataError,
-                  onSettled: () => setIsResetDialogOpen(false)
+                  onSettled: () => setIsResetDialogOpen(false),
                 });
               }}
               disabled={isLoading}
             >
-              {resetDataMutation.isPending ? 'Wird zurückgesetzt...' : 'Bestätigen'}
+              {resetDataMutation.isPending
+                ? 'Wird zurückgesetzt...'
+                : 'Bestätigen'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -390,13 +397,15 @@ export function DataPage() {
                   restoreBackupMutation.mutate(selectedBackup.filename, {
                     onSuccess: handleRestoreBackupSuccess,
                     onError: handleRestoreBackupError,
-                    onSettled: () => setIsRestoreDialogOpen(false)
+                    onSettled: () => setIsRestoreDialogOpen(false),
                   });
                 }
               }}
               disabled={isLoading || !selectedBackup}
             >
-              {restoreBackupMutation.isPending ? 'Wird wiederhergestellt...' : 'Bestätigen'}
+              {restoreBackupMutation.isPending
+                ? 'Wird wiederhergestellt...'
+                : 'Bestätigen'}
             </Button>
           </DialogFooter>
         </DialogContent>

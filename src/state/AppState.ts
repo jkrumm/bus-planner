@@ -23,7 +23,7 @@ export class AppState {
   private assignments: Map<string, Assignment> = new Map();
 
   private readonly dataFile: string;
-  
+
   private onDataChangeCallback?: () => void;
 
   public get dataFilePath(): string {
@@ -87,7 +87,7 @@ export class AppState {
 
       this.metadata = data.metadata || this.metadata;
       console.log(
-          `Loaded ${this.buses.size} buses, ${this.drivers.size} drivers, ${this.lines.size} lines, ${this.assignments.size} assignments`
+        `Loaded ${this.buses.size} buses, ${this.drivers.size} drivers, ${this.lines.size} lines, ${this.assignments.size} assignments`
       );
     } catch (error) {
       console.error('Error loading data:', error);
@@ -103,8 +103,8 @@ export class AppState {
   async save(skipBackup: boolean = false): Promise<void> {
     try {
       const dataDir = this.dataFile.substring(
-          0,
-          this.dataFile.lastIndexOf('/')
+        0,
+        this.dataFile.lastIndexOf('/')
       );
       await Bun.write(`${dataDir}/.keep`, '');
 
@@ -113,11 +113,11 @@ export class AppState {
       const data: AppStateData = {
         buses: Array.from(this.buses.values()).map(bus => bus.toJSON()),
         drivers: Array.from(this.drivers.values()).map(driver =>
-            driver.toJSON()
+          driver.toJSON()
         ),
         lines: Array.from(this.lines.values()).map(line => line.toJSON()),
         assignments: Array.from(this.assignments.values()).map(assignment =>
-            assignment.toJSON()
+          assignment.toJSON()
         ),
         metadata: this.metadata,
       };
@@ -200,7 +200,7 @@ export class AppState {
 
       if (key === 'unavailableDates' && Array.isArray(value)) {
         updatesData.unavailableDates = value.map(date =>
-            date instanceof Date ? date.toISOString() : date
+          date instanceof Date ? date.toISOString() : date
         );
       } else {
         (updatesData as any)[key] = value;
@@ -226,7 +226,7 @@ export class AppState {
 
   getBusByLicensePlate(licensePlate: string): Bus | null {
     return (
-        this.getAllBuses().find(bus => bus.licensePlate === licensePlate) || null
+      this.getAllBuses().find(bus => bus.licensePlate === licensePlate) || null
     );
   }
 
@@ -251,8 +251,8 @@ export class AppState {
   }
 
   async updateDriver(
-      id: string,
-      updates: Partial<Driver>
+    id: string,
+    updates: Partial<Driver>
   ): Promise<Driver | null> {
     const existing = this.drivers.get(id);
     if (!existing) return null;
@@ -266,7 +266,7 @@ export class AppState {
 
       if (key === 'unavailableDates' && Array.isArray(value)) {
         updatesData.unavailableDates = value.map(date =>
-            date instanceof Date ? date.toISOString() : date
+          date instanceof Date ? date.toISOString() : date
         );
       } else if (key in existingData) {
         (updatesData as any)[key] = value;
@@ -292,7 +292,7 @@ export class AppState {
 
   getAvailableDrivers(date: Date): Driver[] {
     return this.getAllDrivers().filter(driver =>
-        driver.isAvailableOnDate(date)
+      driver.isAvailableOnDate(date)
     );
   }
 
@@ -336,7 +336,7 @@ export class AppState {
 
   getLineByNumber(lineNumber: string): Line | null {
     return (
-        this.getAllLines().find(line => line.lineNumber === lineNumber) || null
+      this.getAllLines().find(line => line.lineNumber === lineNumber) || null
     );
   }
 
@@ -375,7 +375,7 @@ export class AppState {
   getAssignmentsByDate(date: Date): Assignment[] {
     const dateKey = date.toISOString().split('T')[0];
     return this.getAllAssignments().filter(
-        assignment => assignment.getDateKey() === dateKey
+      assignment => assignment.getDateKey() === dateKey
     );
   }
 
@@ -391,15 +391,15 @@ export class AppState {
 
   getAssignmentsByShift(date: Date, shift: ShiftType): Assignment[] {
     return this.getAssignmentsByDate(date).filter(
-        assignment => assignment.shift === shift
+      assignment => assignment.shift === shift
     );
   }
 
   getConflicts(
-      date: Date,
-      shift: ShiftType,
-      busId?: string,
-      driverId?: string
+    date: Date,
+    shift: ShiftType,
+    busId?: string,
+    driverId?: string
   ): Assignment[] {
     const shiftAssignments = this.getAssignmentsByShift(date, shift);
 
@@ -417,7 +417,7 @@ export class AppState {
 
   private removeAssignmentsByDriver(driverId: string): void {
     const toRemove = this.getAllAssignments().filter(
-        a => a.driverId === driverId
+      a => a.driverId === driverId
     );
     toRemove.forEach(assignment => this.assignments.delete(assignment.id));
   }

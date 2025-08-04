@@ -36,5 +36,5 @@ export const queryKeys = {
     all: ['backups'] as const,
     create: ['backups', 'create'] as const,
     restore: (filename: string) => ['backups', 'restore', filename] as const,
-  }
+  },
 };

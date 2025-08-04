@@ -50,7 +50,10 @@ export class Bus {
    * @param bufferPercent Safety buffer percentage (0-100)
    * @returns Object with safety status and actual buffer percentage available
    */
-  public checkRangeSafety(distanceKm: number, bufferPercent: number = 20): { isSafe: boolean; actualBufferPercent: number } {
+  public checkRangeSafety(
+    distanceKm: number,
+    bufferPercent: number = 20
+  ): { isSafe: boolean; actualBufferPercent: number } {
     if (!this.isElectric() || !this.maxRangeKm) {
       // Diesel buses or buses without defined range have unlimited range
       return { isSafe: true, actualBufferPercent: 100 };
@@ -63,11 +66,11 @@ export class Bus {
     const isSafe = this.maxRangeKm >= requiredRange;
 
     // Calculate actual buffer percentage available
-    const actualBufferPercent = ((this.maxRangeKm / distanceKm) - 1) * 100;
+    const actualBufferPercent = (this.maxRangeKm / distanceKm - 1) * 100;
 
-    return { 
-      isSafe, 
-      actualBufferPercent: Math.max(0, Math.round(actualBufferPercent)) 
+    return {
+      isSafe,
+      actualBufferPercent: Math.max(0, Math.round(actualBufferPercent)),
     };
   }
 

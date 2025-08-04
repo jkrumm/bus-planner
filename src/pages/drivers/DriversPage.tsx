@@ -12,11 +12,7 @@ export function DriversPage() {
   const navigate = useNavigate();
 
   // Fetch drivers with centralized query hook
-  const { 
-    data: drivers = [], 
-    isLoading, 
-    error 
-  } = useGetDrivers();
+  const { data: drivers = [], isLoading, error } = useGetDrivers();
 
   // Define columns for the data table
   const columns: ColumnDef<Driver>[] = [
@@ -293,7 +289,6 @@ export function DriversPage() {
       ],
     },
   ];
-
 
   // Delete driver mutation using centralized hook
   const deleteDriverMutation = useDeleteDriver();

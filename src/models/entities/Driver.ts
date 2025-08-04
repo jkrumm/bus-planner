@@ -38,7 +38,9 @@ export class Driver {
     this.weeklyHours = weeklyHours;
 
     // Remove contradicting shift preferences (a shift can't be both preferred and avoided)
-    this.preferredShifts = preferredShifts.filter(shift => !shiftsToAvoid.includes(shift));
+    this.preferredShifts = preferredShifts.filter(
+      shift => !shiftsToAvoid.includes(shift)
+    );
     this.shiftsToAvoid = shiftsToAvoid;
     this.availableDays = availableDays;
   }
@@ -50,13 +52,13 @@ export class Driver {
 
     // Check if date is in unavailable dates
     if (
-      this.unavailableDates.some(
-        unavailableDate => {
-          // Make sure we're comparing the date portions only
-          const unavailableDateString = unavailableDate.toISOString().split('T')[0];
-          return unavailableDateString === dateString;
-        }
-      )
+      this.unavailableDates.some(unavailableDate => {
+        // Make sure we're comparing the date portions only
+        const unavailableDateString = unavailableDate
+          .toISOString()
+          .split('T')[0];
+        return unavailableDateString === dateString;
+      })
     ) {
       return false;
     }
@@ -88,7 +90,8 @@ export class Driver {
     // Check if date is already marked as unavailable
     const dateString = cleanDate.toISOString().split('T')[0];
     const isAlreadyUnavailable = this.unavailableDates.some(
-      unavailableDate => unavailableDate.toISOString().split('T')[0] === dateString
+      unavailableDate =>
+        unavailableDate.toISOString().split('T')[0] === dateString
     );
 
     if (isAlreadyUnavailable) return;
@@ -113,7 +116,9 @@ export class Driver {
    * (shifts that appear in both preferred and avoid lists)
    */
   public hasContradictingPreferences(): boolean {
-    return this.preferredShifts.some(shift => this.shiftsToAvoid.includes(shift));
+    return this.preferredShifts.some(shift =>
+      this.shiftsToAvoid.includes(shift)
+    );
   }
 
   /**
@@ -121,12 +126,14 @@ export class Driver {
    * Returns the shifts that were removed
    */
   public resolveContradictions(): ShiftType[] {
-    const contradictions = this.preferredShifts.filter(shift => 
-      this.shiftsToAvoid.includes(shift));
+    const contradictions = this.preferredShifts.filter(shift =>
+      this.shiftsToAvoid.includes(shift)
+    );
 
     if (contradictions.length > 0) {
-      this.preferredShifts = this.preferredShifts.filter(shift => 
-        !this.shiftsToAvoid.includes(shift));
+      this.preferredShifts = this.preferredShifts.filter(
+        shift => !this.shiftsToAvoid.includes(shift)
+      );
     }
 
     return contradictions;

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bus, BusSize, PropulsionType } from '@/models/entities/Bus';
 import { queryKeys } from '@/api/queryKeys';
-import {BUSES_API} from "@/api/apiConfig.ts";
+import { BUSES_API } from '@/api/apiConfig.ts';
 import { Line } from '@/models/entities/Line.ts';
 
 // Fetch all buses
@@ -14,7 +14,7 @@ export function useGetBuses() {
         throw new Error('Failed to fetch buses');
       }
       return ((await response.json()) as Bus[]).map(bus => Bus.fromJSON(bus));
-    }
+    },
   });
 }
 
@@ -91,7 +91,7 @@ export function useCreateBus() {
       queryClient.invalidateQueries({ queryKey: queryKeys.buses.all });
       // Invalidate backups list since a modification was made
       queryClient.invalidateQueries({ queryKey: queryKeys.backups.all });
-    }
+    },
   });
 }
 
@@ -117,7 +117,7 @@ export function useUpdateBus(id: string | undefined) {
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Update the cache for the individual bus
       if (id) {
         queryClient.setQueryData(queryKeys.buses.details(id), data);
@@ -126,7 +126,7 @@ export function useUpdateBus(id: string | undefined) {
       queryClient.invalidateQueries({ queryKey: queryKeys.buses.all });
       // Invalidate backups list since a modification was made
       queryClient.invalidateQueries({ queryKey: queryKeys.backups.all });
-    }
+    },
   });
 }
 
@@ -149,6 +149,6 @@ export function useDeleteBus() {
       queryClient.invalidateQueries({ queryKey: queryKeys.buses.all });
       // Invalidate backups list since a modification was made
       queryClient.invalidateQueries({ queryKey: queryKeys.backups.all });
-    }
+    },
   });
 }

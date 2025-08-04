@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Driver, ShiftType } from '@/models/entities/Driver';
-import { useGetDriver, useCreateDriver, useUpdateDriver } from '@/api/queries/drivers';
+import {
+  useGetDriver,
+  useCreateDriver,
+  useUpdateDriver,
+} from '@/api/queries/drivers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -42,10 +46,10 @@ export function DriverForm() {
   const [formData, setFormData] = useState<Partial<Driver>>(defaultDriver);
 
   // Fetch driver data with centralized query hook
-  const { 
+  const {
     data: fetchedDriver,
     isLoading: isFetchLoading,
-    error: fetchError
+    error: fetchError,
   } = useGetDriver(id);
 
   // Use centralized mutation hooks
@@ -56,8 +60,8 @@ export function DriverForm() {
   useEffect(() => {
     if (fetchedDriver) {
       setFormData({
-        ...defaultDriver,  // Ensure all defaults are set first
-        ...fetchedDriver,  // Then override with fetched data
+        ...defaultDriver, // Ensure all defaults are set first
+        ...fetchedDriver, // Then override with fetched data
         // Ensure arrays are never undefined
         availableDays: fetchedDriver.availableDays || [],
         preferredShifts: fetchedDriver.preferredShifts || [],
@@ -68,10 +72,14 @@ export function DriverForm() {
   }, [fetchedDriver]);
 
   // Combined loading state
-  const isLoading = isFetchLoading || createDriverMutation.isPending || updateDriverMutation.isPending;
+  const isLoading =
+    isFetchLoading ||
+    createDriverMutation.isPending ||
+    updateDriverMutation.isPending;
 
   // Combined error state
-  const error = fetchError || createDriverMutation.error || updateDriverMutation.error;
+  const error =
+    fetchError || createDriverMutation.error || updateDriverMutation.error;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,13 +88,13 @@ export function DriverForm() {
       updateDriverMutation.mutate(formData, {
         onSuccess: () => {
           navigate('/drivers');
-        }
+        },
       });
     } else {
       createDriverMutation.mutate(formData, {
         onSuccess: () => {
           navigate('/drivers');
-        }
+        },
       });
     }
   };

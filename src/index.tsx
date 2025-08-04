@@ -189,16 +189,21 @@ const server = serve({
     '/api/settings/load-sample-data': async () => {
       try {
         const success = await planningService.loadSampleData();
-        return Response.json({ 
+        return Response.json({
           success,
-          message: success ? 'Sample data loaded successfully' : 'Failed to load sample data'
+          message: success
+            ? 'Sample data loaded successfully'
+            : 'Failed to load sample data',
         });
       } catch (error) {
         console.error('Error loading sample data:', error);
-        return Response.json({
-          success: false,
-          message: `Error loading sample data: ${(error as Error).message}`
-        }, { status: 500 });
+        return Response.json(
+          {
+            success: false,
+            message: `Error loading sample data: ${(error as Error).message}`,
+          },
+          { status: 500 }
+        );
       }
     },
 
@@ -207,14 +212,17 @@ const server = serve({
         const success = await planningService.resetData();
         return Response.json({
           success,
-          message: success ? 'Data reset successfully' : 'Failed to reset data'
+          message: success ? 'Data reset successfully' : 'Failed to reset data',
         });
       } catch (error) {
         console.error('Error resetting data:', error);
-        return Response.json({
-          success: false,
-          message: `Error resetting data: ${(error as Error).message}`
-        }, { status: 500 });
+        return Response.json(
+          {
+            success: false,
+            message: `Error resetting data: ${(error as Error).message}`,
+          },
+          { status: 500 }
+        );
       }
     },
 
@@ -241,16 +249,21 @@ const server = serve({
         );
         return Response.json({
           success,
-          message: success ? 'Backup restored successfully' : 'Failed to restore backup',
-          filename: req.params.filename
+          message: success
+            ? 'Backup restored successfully'
+            : 'Failed to restore backup',
+          filename: req.params.filename,
         });
       } catch (error) {
         console.error('Error restoring backup:', error);
-        return Response.json({
-          success: false,
-          message: `Error restoring backup: ${(error as Error).message}`,
-          filename: req.params.filename
-        }, { status: 500 });
+        return Response.json(
+          {
+            success: false,
+            message: `Error restoring backup: ${(error as Error).message}`,
+            filename: req.params.filename,
+          },
+          { status: 500 }
+        );
       }
     },
 

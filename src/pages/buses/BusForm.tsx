@@ -32,10 +32,10 @@ export function BusForm() {
   const [formData, setFormData] = useState<Partial<Bus>>(defaultBus);
 
   // Fetch bus data with centralized query hook
-  const { 
+  const {
     data: fetchedBus,
     isLoading: isFetchLoading,
-    error: fetchError
+    error: fetchError,
   } = useGetBus(id);
 
   // Use centralized mutation hooks
@@ -46,8 +46,8 @@ export function BusForm() {
   useEffect(() => {
     if (fetchedBus) {
       setFormData({
-        ...defaultBus,  // Ensure all defaults are set first
-        ...fetchedBus,  // Then override with fetched data
+        ...defaultBus, // Ensure all defaults are set first
+        ...fetchedBus, // Then override with fetched data
         // Ensure required fields are never undefined
         size: fetchedBus.size || BusSize.MEDIUM,
         propulsionType: fetchedBus.propulsionType || PropulsionType.DIESEL,
@@ -56,10 +56,14 @@ export function BusForm() {
   }, [fetchedBus]);
 
   // Combined loading state
-  const isLoading = isFetchLoading || createBusMutation.isPending || updateBusMutation.isPending;
+  const isLoading =
+    isFetchLoading ||
+    createBusMutation.isPending ||
+    updateBusMutation.isPending;
 
   // Combined error state
-  const error = fetchError || createBusMutation.error || updateBusMutation.error;
+  const error =
+    fetchError || createBusMutation.error || updateBusMutation.error;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,13 +72,13 @@ export function BusForm() {
       updateBusMutation.mutate(formData, {
         onSuccess: () => {
           navigate('/busses');
-        }
+        },
       });
     } else {
       createBusMutation.mutate(formData, {
         onSuccess: () => {
           navigate('/busses');
-        }
+        },
       });
     }
   };
@@ -117,7 +121,7 @@ export function BusForm() {
             <div className="space-y-2">
               <Label htmlFor="size">Größe</Label>
               <Select
-                value={formData.size || ''}  // <- Handle undefined values
+                value={formData.size || ''} // <- Handle undefined values
                 onValueChange={value => handleChange('size', value)}
               >
                 <SelectTrigger>
@@ -135,7 +139,7 @@ export function BusForm() {
             <div className="space-y-2">
               <Label htmlFor="propulsionType">Antriebsart</Label>
               <Select
-                value={formData.propulsionType || ''}  // <- Handle undefined values
+                value={formData.propulsionType || ''} // <- Handle undefined values
                 onValueChange={value => handleChange('propulsionType', value)}
               >
                 <SelectTrigger>
@@ -191,10 +195,7 @@ export function BusForm() {
               >
                 Abbrechen
               </Button>
-              <Button 
-                type="submit" 
-                disabled={isLoading}
-              >
+              <Button type="submit" disabled={isLoading}>
                 {isLoading ? 'Speichern...' : 'Speichern'}
               </Button>
             </div>

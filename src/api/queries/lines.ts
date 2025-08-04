@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Line, type LineJSON } from '@/models/entities/Line';
 import { queryKeys } from '@/api/queryKeys';
-import { LINES_API } from "@/api/apiConfig";
+import { LINES_API } from '@/api/apiConfig';
 
 // Fetch all lines
 export function useGetLines() {
@@ -12,22 +12,16 @@ export function useGetLines() {
       if (!response.ok) {
         throw new Error('Failed to fetch lines');
       }
-      return ((await response.json()) as Line[]).map(line => Line.fromJSON(line));
-    }
+      return ((await response.json()) as Line[]).map(line =>
+        Line.fromJSON(line)
+      );
+    },
   });
 }
 
 // Fetch a single line
 export function useGetLine(id: string | undefined) {
-  const defaultLine: Line = new Line(
-     '',
-     '',
-     0,
-     0,
-     [],
-     {},
-     true
-  );
+  const defaultLine: Line = new Line('', '', 0, 0, [], {}, true);
 
   return useQuery({
     queryKey: id ? queryKeys.lines.details(id) : ['line', 'new'],
@@ -39,7 +33,7 @@ export function useGetLine(id: string | undefined) {
         throw new Error('Fehler beim Abrufen der Linie');
       }
 
-      return Line.fromJSON(((await response.json()) as LineJSON));
+      return Line.fromJSON((await response.json()) as LineJSON);
     },
     enabled: !!id && id !== 'new',
   });
@@ -70,7 +64,7 @@ export function useCreateLine() {
       queryClient.invalidateQueries({ queryKey: queryKeys.lines.all });
       // Invalidate backups list since a modification was made
       queryClient.invalidateQueries({ queryKey: queryKeys.backups.all });
-    }
+    },
   });
 }
 
@@ -96,7 +90,7 @@ export function useUpdateLine(id: string | undefined) {
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Update the cache for the individual line
       if (id) {
         queryClient.setQueryData(queryKeys.lines.details(id), data);
@@ -105,7 +99,7 @@ export function useUpdateLine(id: string | undefined) {
       queryClient.invalidateQueries({ queryKey: queryKeys.lines.all });
       // Invalidate backups list since a modification was made
       queryClient.invalidateQueries({ queryKey: queryKeys.backups.all });
-    }
+    },
   });
 }
 
@@ -128,6 +122,6 @@ export function useDeleteLine() {
       queryClient.invalidateQueries({ queryKey: queryKeys.lines.all });
       // Invalidate backups list since a modification was made
       queryClient.invalidateQueries({ queryKey: queryKeys.backups.all });
-    }
+    },
   });
 }

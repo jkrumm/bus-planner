@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  ChevronLeft,
-  ChevronRight,
-  History,
-  RefreshCw,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, History, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -21,7 +16,7 @@ export function BackupHistory() {
   const {
     data: backups = [],
     isLoading: isBackupsLoading,
-    error: backupsError
+    error: backupsError,
   } = useGetBackups();
 
   // Set current backup index when data is loaded - use useEffect to avoid infinite re-renders
@@ -93,7 +88,9 @@ export function BackupHistory() {
             {isNewest ? (
               <span className="text-xs">Auf neuestem Stand</span>
             ) : (
-              <span className="text-xs">Backup: {currentBackup?.displayDate || ''}</span>
+              <span className="text-xs">
+                Backup: {currentBackup?.displayDate || ''}
+              </span>
             )}
           </Button>
         </PopoverTrigger>
@@ -104,7 +101,7 @@ export function BackupHistory() {
               {backups.map((backup, index) => (
                 <Button
                   key={backup.filename}
-                  variant={index === currentBackupIndex ? "default" : "ghost"}
+                  variant={index === currentBackupIndex ? 'default' : 'ghost'}
                   size="sm"
                   className="w-full justify-start text-xs mb-1"
                   onClick={() => goToBackup(index)}
@@ -118,7 +115,8 @@ export function BackupHistory() {
                   ) : (
                     <>
                       <History className="h-3 w-3 mr-2" />
-                      Backup: {backup.displayDate} {backup.isCurrent && '(aktiv)'}
+                      Backup: {backup.displayDate}{' '}
+                      {backup.isCurrent && '(aktiv)'}
                     </>
                   )}
                 </Button>

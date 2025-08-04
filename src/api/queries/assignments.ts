@@ -118,12 +118,14 @@ export const useDeleteAssignment = () => {
       // we could either store it in a variable before deletion
       // or simply invalidate all date-based queries
       queryClient.invalidateQueries({
-        predicate: (query) => {
+        predicate: query => {
           const queryKey = query.queryKey;
-          return Array.isArray(queryKey) && 
-                 queryKey.length > 0 && 
-                 queryKey[0] === 'assignments' && 
-                 queryKey[1] === 'date';
+          return (
+            Array.isArray(queryKey) &&
+            queryKey.length > 0 &&
+            queryKey[0] === 'assignments' &&
+            queryKey[1] === 'date'
+          );
         },
       });
     },

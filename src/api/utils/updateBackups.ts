@@ -12,7 +12,7 @@ export function invalidateBackups(queryClient: QueryClient): void {
 /**
  * Utility function to update all relevant queries when a mutation is performed.
  * This is a convenience function that can be called from any mutation's onSuccess callback.
- * 
+ *
  * @param queryClient The QueryClient instance
  * @param queryKey The query key to invalidate (in addition to backups)
  */

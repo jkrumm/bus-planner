@@ -47,10 +47,10 @@ export function LineForm() {
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
   // Fetch line data with centralized query hook
-  const { 
+  const {
     data: fetchedLine,
     isLoading: isFetchLoading,
-    error: fetchError
+    error: fetchError,
   } = useGetLine(id);
 
   // Use centralized mutation hooks
@@ -61,12 +61,13 @@ export function LineForm() {
   useEffect(() => {
     if (fetchedLine) {
       setLine({
-        ...defaultLine,  // Ensure all defaults are set first
-        ...fetchedLine,  // Then override with fetched data
+        ...defaultLine, // Ensure all defaults are set first
+        ...fetchedLine, // Then override with fetched data
         // Ensure arrays and objects are never undefined
         compatibleBusSizes: fetchedLine.compatibleBusSizes || [],
         weeklySchedule: fetchedLine.weeklySchedule || {},
-        isActive: fetchedLine.isActive !== undefined ? fetchedLine.isActive : true,
+        isActive:
+          fetchedLine.isActive !== undefined ? fetchedLine.isActive : true,
       });
     }
   }, [fetchedLine]);
@@ -79,10 +80,14 @@ export function LineForm() {
   }, [line.weeklySchedule]);
 
   // Combined loading state
-  const isLoading = isFetchLoading || createLineMutation.isPending || updateLineMutation.isPending;
+  const isLoading =
+    isFetchLoading ||
+    createLineMutation.isPending ||
+    updateLineMutation.isPending;
 
   // Combined error state
-  const error = fetchError || createLineMutation.error || updateLineMutation.error;
+  const error =
+    fetchError || createLineMutation.error || updateLineMutation.error;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,13 +96,13 @@ export function LineForm() {
       updateLineMutation.mutate(line, {
         onSuccess: () => {
           navigate('/lines');
-        }
+        },
       });
     } else {
       createLineMutation.mutate(line, {
         onSuccess: () => {
           navigate('/lines');
-        }
+        },
       });
     }
   };

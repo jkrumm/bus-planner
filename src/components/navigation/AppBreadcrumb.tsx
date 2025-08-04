@@ -47,7 +47,9 @@ export function AppBreadcrumb() {
   } else if (path.startsWith('/assignments')) {
     if (path.match(/\/assignments\/day\/[\d-]+/)) {
       const dateIso = path.split('/').pop();
-      const formattedDate = dateIso ? new Date(dateIso).toLocaleDateString('de-DE') : '';
+      const formattedDate = dateIso
+        ? new Date(dateIso).toLocaleDateString('de-DE')
+        : '';
       title = `Zuweisung für den ${formattedDate}`;
       parentTitle = 'Zuweisungen';
       parentPath = '/';
