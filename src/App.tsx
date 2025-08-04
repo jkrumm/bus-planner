@@ -26,6 +26,8 @@ import { DataPage } from '@/pages/settings/DataPage';
 import './index.css';
 import { DriverForm } from '@/pages/drivers/DriverForm.tsx';
 import { DayPage } from '@/pages/assignments/DayPage.tsx';
+import { WeekPage } from '@/pages/assignments/WeekPage.tsx';
+import { getISOWeek } from 'date-fns';
 
 // Main App component with routing
 export function App() {
@@ -55,6 +57,15 @@ export function App() {
               <Route path="/drivers/new" element={<DriverForm />} />
               <Route path="/drivers/edit/:id" element={<DriverForm />} />
               <Route path="/settings/data" element={<DataPage />} />
+              <Route
+                path="/assignments/week"
+                element={
+                  <Navigate
+                    to={`/assignments/week/${getISOWeek(new Date())}`}
+                  />
+                }
+              />
+              <Route path="/assignments/week/:week" element={<WeekPage />} />
               <Route
                 path="/assignments/day"
                 element={

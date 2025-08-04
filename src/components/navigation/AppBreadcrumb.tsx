@@ -45,12 +45,18 @@ export function AppBreadcrumb() {
     parentTitle = 'Stammdaten';
     parentPath = '/';
   } else if (path.startsWith('/assignments')) {
+    if (path.match(/\/assignments\/week\/[\d-]+/)) {
+      const weekIso = path.split('/').pop();
+      title = `Wochenplanung - KW ${weekIso}`;
+      parentTitle = 'Zuweisungen';
+      parentPath = '/';
+    }
     if (path.match(/\/assignments\/day\/[\d-]+/)) {
       const dateIso = path.split('/').pop();
       const formattedDate = dateIso
         ? new Date(dateIso).toLocaleDateString('de-DE')
         : '';
-      title = `Zuweisung für den ${formattedDate}`;
+      title = `Tagesplanung - ${formattedDate}`;
       parentTitle = 'Zuweisungen';
       parentPath = '/';
     }

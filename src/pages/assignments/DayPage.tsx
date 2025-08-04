@@ -970,7 +970,7 @@ export function DayPage() {
       <div className="flex-shrink-0">
         <div className="flex items-center justify-between">
           <h1 className="text-xl md:text-2xl font-semibold">
-            Zuweisung für den {formattedDate}
+            Tagesplanung - {formattedDate}
             {lineId && selectedLineName ? ` (${selectedLineName})` : ''}
           </h1>
           <div className="flex flex-col items-end gap-1">

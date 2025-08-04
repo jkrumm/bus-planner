@@ -23,7 +23,11 @@ const data = {
       url: '#',
       items: [
         {
-          title: 'Tag',
+          title: 'Wochenplanung',
+          url: '/assignments/week',
+        },
+        {
+          title: 'Tagesplanung',
           url: '/assignments/day',
         },
       ],
