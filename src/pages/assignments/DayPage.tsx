@@ -952,7 +952,6 @@ export function DayPage() {
             Zuweisung für den {formattedDate}
             {lineId && selectedLineName ? ` (${selectedLineName})` : ''}
           </h1>
-
           <div className="flex flex-col items-end gap-1">
             <div className="text-xs font-medium">
               {`Bus ${tempSelectedBus ? '✓' : ''} und Fahrer ${tempSelectedDriver ? '✓' : ''} auswählen`}
@@ -995,11 +994,11 @@ export function DayPage() {
               <Link
                 key={tab.dateString}
                 to={`/assignments/day/${tab.dateString}${lineId ? `?lineId=${lineId}` : ''}`}
-                className="flex-shrink-0"
+                className="flex-1"
               >
                 <div
                   className={cn(
-                    'p-3 rounded-lg border text-center min-w-[120px] transition-all hover:bg-muted/50',
+                    'p-3 rounded-lg border text-center transition-all hover:bg-muted/50',
                     tab.isActive
                       ? 'bg-muted shadow-sm'
                       : 'bg-background border-border hover:border-muted-foreground/30'
@@ -1350,13 +1349,9 @@ export function DayPage() {
                     <BusIcon className="h-4 w-4 mr-1" />
                     <span>Busse</span>
                   </div>
-                  {isSelectionMode ? (
+                  {isSelectionMode && (
                     <span className="text-xs text-primary-foreground bg-primary px-2 py-0.5 rounded-full">
                       Auswahl aktiv
-                    </span>
-                  ) : (
-                    <span className="text-xs text-primary-foreground bg-primary px-2 py-0.5 rounded-full">
-                      Auswahl inaktiv
                     </span>
                   )}
                 </CardTitle>
@@ -1367,6 +1362,40 @@ export function DayPage() {
                     <p className="text-center text-muted-foreground py-8">
                       Wird geladen...
                     </p>
+                  ) : !isSelectionMode ? (
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <p className="text-center text-muted-foreground mb-2 text-xs">
+                        Wählen Sie eine Schicht aus
+                      </p>
+                      <div className="flex gap-2">
+                        {lineId && isShiftRequired(ShiftType.MORNING) && (
+                          <Badge
+                            className="cursor-pointer"
+                            onClick={() => handleShiftSelect(ShiftType.MORNING)}
+                          >
+                            {SHIFT_NAMES[ShiftType.MORNING]}
+                          </Badge>
+                        )}
+                        {lineId && isShiftRequired(ShiftType.AFTERNOON) && (
+                          <Badge
+                            className="cursor-pointer"
+                            onClick={() =>
+                              handleShiftSelect(ShiftType.AFTERNOON)
+                            }
+                          >
+                            {SHIFT_NAMES[ShiftType.AFTERNOON]}
+                          </Badge>
+                        )}
+                        {lineId && isShiftRequired(ShiftType.NIGHT) && (
+                          <Badge
+                            className="cursor-pointer"
+                            onClick={() => handleShiftSelect(ShiftType.NIGHT)}
+                          >
+                            {SHIFT_NAMES[ShiftType.NIGHT]}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   ) : (
                     <TooltipProvider>
                       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
@@ -1710,6 +1739,40 @@ export function DayPage() {
                     <p className="text-center text-muted-foreground py-8">
                       Wird geladen...
                     </p>
+                  ) : !isSelectionMode ? (
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <p className="text-center text-muted-foreground mb-2 text-xs">
+                        Wählen Sie eine Schicht aus
+                      </p>
+                      <div className="flex gap-2">
+                        {lineId && isShiftRequired(ShiftType.MORNING) && (
+                          <Badge
+                            className="cursor-pointer"
+                            onClick={() => handleShiftSelect(ShiftType.MORNING)}
+                          >
+                            {SHIFT_NAMES[ShiftType.MORNING]}
+                          </Badge>
+                        )}
+                        {lineId && isShiftRequired(ShiftType.AFTERNOON) && (
+                          <Badge
+                            className="cursor-pointer"
+                            onClick={() =>
+                              handleShiftSelect(ShiftType.AFTERNOON)
+                            }
+                          >
+                            {SHIFT_NAMES[ShiftType.AFTERNOON]}
+                          </Badge>
+                        )}
+                        {lineId && isShiftRequired(ShiftType.NIGHT) && (
+                          <Badge
+                            className="cursor-pointer"
+                            onClick={() => handleShiftSelect(ShiftType.NIGHT)}
+                          >
+                            {SHIFT_NAMES[ShiftType.NIGHT]}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   ) : (
                     <TooltipProvider>
                       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">

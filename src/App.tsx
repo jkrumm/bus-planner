@@ -5,7 +5,12 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
 import { AppBreadcrumb } from '@/components/navigation/AppBreadcrumb';
 import { BackupHistory } from '@/components/navigation/BackupHistory';
 
@@ -50,6 +55,14 @@ export function App() {
               <Route path="/drivers/new" element={<DriverForm />} />
               <Route path="/drivers/edit/:id" element={<DriverForm />} />
               <Route path="/settings/data" element={<DataPage />} />
+              <Route
+                path="/assignments/day"
+                element={
+                  <Navigate
+                    to={`/assignments/day/${new Date().toISOString().split('T')[0]}`}
+                  />
+                }
+              />
               <Route path="/assignments/day/:date" element={<DayPage />} />
             </Routes>
           </SidebarInset>
