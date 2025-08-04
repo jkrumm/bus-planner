@@ -101,7 +101,7 @@ export function DayPage() {
 
   // Format date for display
   const formattedDate = date
-    ? format(new Date(date), 'dd.MM.yyyy', { locale: de })
+    ? format(new Date(date), 'dd.MM.', { locale: de })
     : '';
 
   // Helper function to check if shift times overlap with line operating hours
@@ -458,7 +458,7 @@ export function DayPage() {
       tabs.push({
         date: tabDate,
         dateString: tabDateString,
-        displayDate: format(tabDate, 'dd.MM.yyyy'),
+        displayDate: format(tabDate, `dd.MM. - 'KW' ww`, { locale: de }),
         displayDay: format(tabDate, 'EEEE', { locale: de }),
         label: getDateLabel(tabDate),
         isActive: false,
@@ -475,7 +475,7 @@ export function DayPage() {
     tabs.push({
       date: currentDate,
       dateString: currentDateString,
-      displayDate: format(currentDate, 'dd.MM.yyyy'),
+      displayDate: format(currentDate, `dd.MM. - 'KW' ww`, { locale: de }),
       displayDay: format(currentDate, 'EEEE', { locale: de }),
       label: getDateLabel(currentDate),
       isActive: true,
@@ -492,7 +492,7 @@ export function DayPage() {
       tabs.push({
         date: tabDate,
         dateString: tabDateString,
-        displayDate: format(tabDate, 'dd.MM.yyyy'),
+        displayDate: format(tabDate, `dd.MM. - 'KW' ww`, { locale: de }),
         displayDay: format(tabDate, 'EEEE', { locale: de }),
         label: getDateLabel(tabDate),
         isActive: false,
@@ -965,44 +965,43 @@ export function DayPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6 h-full max-h-full overflow-hidden">
-      {/* Header */}
-      <div className="flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl md:text-2xl font-semibold">
-            Tagesplanung - {formattedDate}
-            {lineId && selectedLineName ? ` (${selectedLineName})` : ''}
-          </h1>
-          <div className="flex flex-col items-end gap-1">
-            <div className="text-xs font-medium">
-              {`Bus ${tempSelectedBus ? '✓' : ''} und Fahrer ${tempSelectedDriver ? '✓' : ''} auswählen`}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                disabled={
-                  !canSaveAssignment() || createAssignmentMutation.isPending
-                }
-                className="flex gap-2 items-center"
-                onClick={saveAssignment}
-                variant={canSaveAssignment() ? 'default' : 'outline'}
-              >
-                <Save className="h-4 w-4" />
-                {createAssignmentMutation.isPending
-                  ? 'Speichere...'
-                  : 'Speichern'}
-              </Button>
-              <Button
-                onClick={handleDeleteAssignment}
-                disabled={
-                  !canDeleteAssignment() || deleteAssignmentMutation.isPending
-                }
-                variant="destructive"
-                className="flex items-center gap-2"
-              >
-                <Trash className="h-4 w-4" />
-                {deleteAssignmentMutation.isPending ? 'Lösche...' : 'Löschen'}
-              </Button>
-            </div>
+    <div className="flex flex-col gap-4 p-4 md:p-6 h-full max-h-[calc(100vh-64px)] overflow-auto">
+      {/* Header and Action buttons */}
+      <div className="flex-shrink-0 flex justify-between items-center">
+        <h1 className="text-xl md:text-2xl font-semibold">
+          Tagesplanung - {formattedDate}
+          {lineId && selectedLineName ? ` (${selectedLineName})` : ''}
+        </h1>
+
+        <div className="flex flex-col items-end gap-1">
+          <div className="text-xs font-medium">
+            {`Bus ${tempSelectedBus ? '✓' : ''} und Fahrer ${tempSelectedDriver ? '✓' : ''} auswählen`}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              disabled={
+                !canSaveAssignment() || createAssignmentMutation.isPending
+              }
+              className="flex gap-2 items-center"
+              onClick={saveAssignment}
+              variant={canSaveAssignment() ? 'default' : 'outline'}
+            >
+              <Save className="h-4 w-4" />
+              {createAssignmentMutation.isPending
+                ? 'Speichere...'
+                : 'Speichern'}
+            </Button>
+            <Button
+              onClick={handleDeleteAssignment}
+              disabled={
+                !canDeleteAssignment() || deleteAssignmentMutation.isPending
+              }
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              <Trash className="h-4 w-4" />
+              {deleteAssignmentMutation.isPending ? 'Lösche...' : 'Löschen'}
+            </Button>
           </div>
         </div>
       </div>
@@ -1019,15 +1018,19 @@ export function DayPage() {
               >
                 <div
                   className={cn(
-                    'p-3 rounded-lg border text-center transition-all hover:bg-muted/50',
+                    'p-3 min-w-[118px] rounded-lg border transition-all hover:bg-muted/50',
                     tab.isActive
                       ? 'bg-muted shadow-sm'
                       : 'bg-background border-border hover:border-muted-foreground/30'
                   )}
                 >
-                  <div className="text-sm font-medium">{tab.label}</div>
+                  <div className="text-sm mb-2 font-medium capitalize">
+                    {tab.displayDay}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {tab.label}
+                  </div>
                   <div className="text-xs">{tab.displayDate}</div>
-                  <div className="text-xs capitalize">{tab.displayDay}</div>
 
                   {/* Planning Status */}
                   {tab.planningStatus && (
@@ -1420,6 +1423,12 @@ export function DayPage() {
                         {lineId && isShiftRequired(ShiftType.MORNING) && (
                           <Badge
                             className="cursor-pointer"
+                            variant={
+                              selectedBuses[ShiftType.MORNING] &&
+                              selectedDrivers[ShiftType.MORNING]
+                                ? 'default'
+                                : 'destructive'
+                            }
                             onClick={() => handleShiftSelect(ShiftType.MORNING)}
                           >
                             {SHIFT_NAMES[ShiftType.MORNING]}
@@ -1428,6 +1437,12 @@ export function DayPage() {
                         {lineId && isShiftRequired(ShiftType.AFTERNOON) && (
                           <Badge
                             className="cursor-pointer"
+                            variant={
+                              selectedBuses[ShiftType.AFTERNOON] &&
+                              selectedDrivers[ShiftType.AFTERNOON]
+                                ? 'default'
+                                : 'destructive'
+                            }
                             onClick={() =>
                               handleShiftSelect(ShiftType.AFTERNOON)
                             }
@@ -1438,6 +1453,12 @@ export function DayPage() {
                         {lineId && isShiftRequired(ShiftType.NIGHT) && (
                           <Badge
                             className="cursor-pointer"
+                            variant={
+                              selectedBuses[ShiftType.NIGHT] &&
+                              selectedDrivers[ShiftType.NIGHT]
+                                ? 'default'
+                                : 'destructive'
+                            }
                             onClick={() => handleShiftSelect(ShiftType.NIGHT)}
                           >
                             {SHIFT_NAMES[ShiftType.NIGHT]}
@@ -1796,7 +1817,13 @@ export function DayPage() {
                       <div className="flex gap-2">
                         {lineId && isShiftRequired(ShiftType.MORNING) && (
                           <Badge
-                            className="cursor-pointer"
+                            className={cn(
+                              'cursor-pointer',
+                              selectedBuses[ShiftType.MORNING] &&
+                                selectedDrivers[ShiftType.MORNING]
+                                ? 'bg-green-500 hover:bg-green-600'
+                                : 'bg-red-500 hover:bg-red-600'
+                            )}
                             onClick={() => handleShiftSelect(ShiftType.MORNING)}
                           >
                             {SHIFT_NAMES[ShiftType.MORNING]}
@@ -1804,7 +1831,13 @@ export function DayPage() {
                         )}
                         {lineId && isShiftRequired(ShiftType.AFTERNOON) && (
                           <Badge
-                            className="cursor-pointer"
+                            className={cn(
+                              'cursor-pointer',
+                              selectedBuses[ShiftType.AFTERNOON] &&
+                                selectedDrivers[ShiftType.AFTERNOON]
+                                ? 'bg-green-500 hover:bg-green-600'
+                                : 'bg-red-500 hover:bg-red-600'
+                            )}
                             onClick={() =>
                               handleShiftSelect(ShiftType.AFTERNOON)
                             }
@@ -1814,7 +1847,13 @@ export function DayPage() {
                         )}
                         {lineId && isShiftRequired(ShiftType.NIGHT) && (
                           <Badge
-                            className="cursor-pointer"
+                            className={cn(
+                              'cursor-pointer',
+                              selectedBuses[ShiftType.NIGHT] &&
+                                selectedDrivers[ShiftType.NIGHT]
+                                ? 'bg-green-500 hover:bg-green-600'
+                                : 'bg-red-500 hover:bg-red-600'
+                            )}
                             onClick={() => handleShiftSelect(ShiftType.NIGHT)}
                           >
                             {SHIFT_NAMES[ShiftType.NIGHT]}
