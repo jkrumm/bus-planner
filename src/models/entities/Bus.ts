@@ -43,6 +43,34 @@ export class Bus {
     return !!this.maxRangeKm && this.maxRangeKm >= distanceKm;
   }
 
+  /**
+   * Checks if an electric bus has sufficient range for the given distance
+   * including a safety buffer for unexpected detours or weather conditions
+   * @param distanceKm The total distance to cover in kilometers
+   * @param bufferPercent Safety buffer percentage (0-100)
+   * @returns Object with safety status and actual buffer percentage available
+   */
+  public checkRangeSafety(distanceKm: number, bufferPercent: number = 20): { isSafe: boolean; actualBufferPercent: number } {
+    if (!this.isElectric() || !this.maxRangeKm) {
+      // Diesel buses or buses without defined range have unlimited range
+      return { isSafe: true, actualBufferPercent: 100 };
+    }
+
+    // Calculate required range with buffer
+    const requiredRange = distanceKm * (1 + bufferPercent / 100);
+
+    // Check if the bus has sufficient range
+    const isSafe = this.maxRangeKm >= requiredRange;
+
+    // Calculate actual buffer percentage available
+    const actualBufferPercent = ((this.maxRangeKm / distanceKm) - 1) * 100;
+
+    return { 
+      isSafe, 
+      actualBufferPercent: Math.max(0, Math.round(actualBufferPercent)) 
+    };
+  }
+
   public isAvailableOnDate(date: Date): boolean {
     const dateString = date.toISOString().split('T')[0];
     return !this.unavailableDates.some(

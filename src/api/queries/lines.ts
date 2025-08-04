@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Line } from '@/models/entities/Line';
+import { Line, type LineJSON } from '@/models/entities/Line';
 import { queryKeys } from '@/api/queryKeys';
 import { LINES_API } from "@/api/apiConfig";
 
@@ -19,15 +19,15 @@ export function useGetLines() {
 
 // Fetch a single line
 export function useGetLine(id: string | undefined) {
-  const defaultLine: Partial<Line> = {
-    lineNumber: '',
-    routeName: '',
-    distanceKm: 0,
-    durationMinutes: 0,
-    compatibleBusSizes: [],
-    weeklySchedule: {},
-    isActive: true,
-  };
+  const defaultLine: Line = new Line(
+     '',
+     '',
+     0,
+     0,
+     [],
+     {},
+     true
+  );
 
   return useQuery({
     queryKey: id ? queryKeys.lines.details(id) : ['line', 'new'],
@@ -39,7 +39,7 @@ export function useGetLine(id: string | undefined) {
         throw new Error('Fehler beim Abrufen der Linie');
       }
 
-      return response.json();
+      return Line.fromJSON(((await response.json()) as LineJSON));
     },
     enabled: !!id && id !== 'new',
   });

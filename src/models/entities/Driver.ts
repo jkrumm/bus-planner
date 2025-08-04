@@ -44,13 +44,18 @@ export class Driver {
   }
 
   public isAvailableOnDate(date: Date): boolean {
-    const dateString = date.toISOString().split('T')[0];
+    // Ensure we're working with a proper Date object
+    const checkDate = new Date(date);
+    const dateString = checkDate.toISOString().split('T')[0];
 
     // Check if date is in unavailable dates
     if (
       this.unavailableDates.some(
-        unavailableDate =>
-          unavailableDate.toISOString().split('T')[0] === dateString
+        unavailableDate => {
+          // Make sure we're comparing the date portions only
+          const unavailableDateString = unavailableDate.toISOString().split('T')[0];
+          return unavailableDateString === dateString;
+        }
       )
     ) {
       return false;
@@ -62,7 +67,7 @@ export class Driver {
     }
 
     // Check if day of week is in available days
-    const dayOfWeek = date
+    const dayOfWeek = checkDate
       .toLocaleDateString('en-US', { weekday: 'long' })
       .toLowerCase();
     return this.availableDays.includes(dayOfWeek);
@@ -77,12 +82,26 @@ export class Driver {
   }
 
   public markUnavailable(date: Date): void {
-    if (!this.isAvailableOnDate(date)) return;
-    this.unavailableDates.push(new Date(date));
+    // Create a clean date object with no time information
+    const cleanDate = new Date(date.toISOString().split('T')[0]!);
+
+    // Check if date is already marked as unavailable
+    const dateString = cleanDate.toISOString().split('T')[0];
+    const isAlreadyUnavailable = this.unavailableDates.some(
+      unavailableDate => unavailableDate.toISOString().split('T')[0] === dateString
+    );
+
+    if (isAlreadyUnavailable) return;
+
+    // Add the new unavailable date
+    this.unavailableDates.push(cleanDate);
   }
 
   public markAvailable(date: Date): void {
-    const dateString = date.toISOString().split('T')[0];
+    // Ensure we have a proper date object
+    const cleanDate = new Date(date);
+    const dateString = cleanDate.toISOString().split('T')[0];
+
     this.unavailableDates = this.unavailableDates.filter(
       unavailableDate =>
         unavailableDate.toISOString().split('T')[0] !== dateString

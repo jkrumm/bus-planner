@@ -34,7 +34,7 @@ import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
 import {cn} from '@/lib/utils';
-import {Separator} from '@/components/ui/separator';
+import {LineDetailCard} from '@/components/line-detail-card';
 import {ShiftType} from '@/models/entities/Driver';
 import {Bus, BusSize, PropulsionType} from '@/models/entities/Bus';
 import {Driver} from '@/models/entities/Driver';
@@ -285,11 +285,12 @@ export function DayPage() {
         if (!lineId || !shiftType || !date) return false;
 
         // Check if there's an existing assignment for this line, shift, and date
+        const currentDateString = new Date(date).toISOString().split('T')[0];
         const existingAssignment = existingAssignments?.find(
             assignment => 
                 assignment.lineId === lineId && 
                 assignment.shift === shiftType && 
-                ( new Date(assignment.date).toISOString().split('T')[0] === date)
+                new Date(assignment.date).toISOString().split('T')[0] === currentDateString
         );
 
         return !!existingAssignment;
@@ -417,9 +418,15 @@ export function DayPage() {
 
     // Update selected buses and drivers when existing assignments are loaded
     useEffect(() => {
-        if (existingAssignments && existingAssignments.length > 0 && lineId) {
-            // Filter assignments for the current line
-            const lineAssignments = existingAssignments.filter(assignment => assignment.lineId === lineId);
+        if (existingAssignments && existingAssignments.length > 0 && lineId && date) {
+            // Get current date string for comparison
+            const currentDateString = new Date(date).toISOString().split('T')[0];
+
+            // Filter assignments for the current line and date
+            const lineAssignments = existingAssignments.filter(assignment => 
+                assignment.lineId === lineId && 
+                new Date(assignment.date).toISOString().split('T')[0] === currentDateString
+            );
 
             // Create new state objects
             const newSelectedBuses = {...selectedBuses};
@@ -435,74 +442,206 @@ export function DayPage() {
             setSelectedBuses(newSelectedBuses);
             setSelectedDrivers(newSelectedDrivers);
         }
-    }, [existingAssignments, lineId]);
+    }, [existingAssignments, lineId, date]);
 
     // Score drivers for the current shift and date
     const scoreDriver = (driver: Driver, shift: ShiftType): number => {
         if (!date) return 0;
-
-        let score = 50; // Base score
+    
+        let score = 0; // Start from 0 instead of 50
+        // Ensure we work with a proper Date object for comparison
         const currentDate = new Date(date);
         const weekday = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-
+    
         // Perfect match criteria counter
         let perfectMatchCriteria = 0;
         let totalCriteria = 0;
-
-        // 1. Availability on the selected day is critical
+    
+        // 1. Check for unavailable dates first (highest priority) - 25 points
+        totalCriteria++;
+        if (driver.unavailableDates && driver.unavailableDates.length > 0) {
+            // Check if this date is in the driver's unavailable dates list
+            const isAvailable = driver.isAvailableOnDate(currentDate);
+            if (isAvailable) {
+                perfectMatchCriteria++;
+                score += 25; // Available on this date
+            }
+            // If unavailable, score remains 0 for this criteria (no penalty needed)
+        } else {
+            // No unavailable dates set - perfect
+            perfectMatchCriteria++;
+            score += 25;
+        }
+    
+        // 2. Check for weekly availability - 25 points
         totalCriteria++;
         if (driver.availableDays && driver.availableDays.length > 0) {
-            if (!driver.availableDays.includes(weekday)) {
-                // Driver doesn't work on this day - critical issue
-                score -= 70;
-            } else {
-                // Driver is explicitly available on this day
+            if (driver.availableDays.includes(weekday)) {
                 perfectMatchCriteria++;
-                score += 15;
+                score += 25; // Available on this weekday
             }
+            // If not available on this weekday, score remains 0 for this criteria
         } else {
-            // Driver is available all days
+            // Driver is available all days - perfect
             perfectMatchCriteria++;
-            score += 5;
+            score += 25;
         }
-
-        // 2. Check if driver is unavailable on this specific date (vacation, etc)
-        totalCriteria++;
-        if (driver.isAvailableOnDate && !driver.isAvailableOnDate(currentDate)) {
-            // Severe penalty - practically disqualifying
-            score -= 80;
-        } else {
-            perfectMatchCriteria++;
-        }
-
-        // 3. Check shift preference - major positive factor
+    
+        // 3. Check shift preference - 25 points
         totalCriteria++;
         if (driver.hasShiftPreference && driver.hasShiftPreference(shift)) {
+            // Driver explicitly prefers this shift - PERFECT
             perfectMatchCriteria++;
-            score += 30; // Significant bonus
-        }
-
-        // 4. Check if driver avoids this shift - major negative factor
-        totalCriteria++;
-        if (driver.avoidsShift && driver.avoidsShift(shift)) {
-            score -= 60; // Severe penalty
+            score += 25;
+        } else if (driver.avoidsShift && driver.avoidsShift(shift)) {
+            // Driver explicitly avoids this shift - BAD
+            score += 0; // No points for avoiding the shift
         } else {
-            perfectMatchCriteria++;
+            // Driver is neutral about this shift - GOOD but not perfect
+            score += 15; // Good but less than preference
+            // Don't count as perfect match criteria since it's not a preference
         }
-
-        // 5. Check for existing assignments on same day (different shift)
+        // If driver avoids this shift, score remains 0 for this criteria
+    
+        // 4. Check for existing assignments on same day (different shift) - 25 points
         totalCriteria++;
         const hasOtherShiftToday = existingAssignments?.some(a => 
             a.driverId === driver.id && 
             new Date(a.date).toDateString() === currentDate.toDateString() &&
             a.shift !== shift
         ) || false;
-
-        if (hasOtherShiftToday) {
+    
+        if (!hasOtherShiftToday) {
+            // Driver is free for the whole day - perfect
             // This could be good or bad depending on context
             // Here we treat it as positive for continuity
             perfectMatchCriteria++;
-            score += 20;
+            score += 25;
+        } else {
+            // Driver has another shift - could be continuity, give partial credit
+            score += 15; // Partial credit for continuity
+            // Don't count as perfect match criteria
+        }
+    
+        // Bonus for perfect matches: if all criteria are perfectly met, ensure 100%
+        if (perfectMatchCriteria === totalCriteria) {
+            score = 100; // Guarantee perfect score
+        }
+    
+        // For near-perfect matches (missing only one criteria), give a high score
+        // Add a small random factor to differentiate otherwise equal scores (0-2 points)
+        else if (perfectMatchCriteria === totalCriteria - 1) {
+            score = Math.max(score, 95); // At least 95% for near-perfect
+        }
+    
+        // Severe penalties for critical issues that should prevent assignment
+        if (driver.unavailableDates && driver.unavailableDates.length > 0) {
+            const isAvailable = driver.isAvailableOnDate(currentDate);
+            if (!isAvailable) {
+                score = Math.min(score, 10); // Cap at 10% for unavailable drivers
+            }
+        }
+    
+        if (driver.availableDays && driver.availableDays.length > 0 && !driver.availableDays.includes(weekday)) {
+            score = Math.min(score, 15); // Cap at 15% for drivers not working this day
+        }
+    
+        if (driver.avoidsShift && driver.avoidsShift(shift)) {
+            score = Math.min(score, 20); // Cap at 20% for drivers avoiding this shift
+        }
+    
+        return Math.max(0, Math.min(100, Math.round(score)));
+    };
+
+    // Score buses for the current line, shift and date
+    const scoreBus = (bus: Bus, shift: ShiftType): number => {
+        if (!date || !selectedLine) return 0;
+
+        let score = 50; // Base score
+        const currentDate = new Date(date);
+
+        // Perfect match criteria counter
+        let perfectMatchCriteria = 0;
+        let totalCriteria = 0;
+
+        // 1. Check for unavailable dates first (highest priority)
+        totalCriteria++;
+        if (bus.unavailableDates && bus.unavailableDates.length > 0) {
+            const isAvailable = bus.isAvailableOnDate(currentDate);
+            if (!isAvailable) {
+                // Bus is explicitly unavailable on this date (maintenance, etc.)
+                score -= 90; // Severe penalty
+            } else {
+                perfectMatchCriteria++;
+            }
+        } else {
+            perfectMatchCriteria++;
+        }
+
+        // 2. Check if bus is already assigned to another shift on the same day
+        totalCriteria++;
+        const hasOtherShiftToday = existingAssignments?.some(a => 
+            a.busId === bus.id && 
+            new Date(a.date).toDateString() === currentDate.toDateString() &&
+            a.shift !== shift
+        ) || false;
+
+        if (hasOtherShiftToday) {
+            // It's usually not ideal to have a bus doing multiple shifts
+            // but it's not a critical issue
+            score -= 30;
+        } else {
+            perfectMatchCriteria++;
+            score += 10;
+        }
+
+        // 3. Check if bus size is compatible with the line
+        totalCriteria++;
+        if (selectedLine.compatibleBusSizes.includes(bus.size)) {
+            perfectMatchCriteria++;
+            // More compatible bus sizes means more flexibility in the fleet
+            // Give higher scores to buses with a size that's less common in compatible sizes
+            const compatibleSizesCount = selectedLine.compatibleBusSizes.length;
+            const sizePriorityBonus = compatibleSizesCount > 1 ? (5 / compatibleSizesCount) : 0;
+            score += 20 + Math.round(sizePriorityBonus);
+        } else {
+            score -= 50; // Major penalty for size incompatibility
+        }
+
+        // 4. For electric buses, check range capacity against the line's accumulated distance
+        if (bus.isElectric()) {
+            totalCriteria++;
+
+            // Calculate accumulated distance for the line on this day
+            const accumulatedDistance = calculateLineAccumulatedDistance();
+
+            if (accumulatedDistance > 0) {
+                // Check if bus has sufficient range with different buffer levels
+                const rangeSafety = bus.checkRangeSafety(accumulatedDistance, 20); // 20% buffer
+
+                if (rangeSafety.isSafe) {
+                    perfectMatchCriteria++;
+                    // Bonus based on actual buffer percentage (max +25 points)
+                    score += Math.min(25, rangeSafety.actualBufferPercent / 4);
+                } else {
+                    // Penalty depends on how close the bus is to having sufficient range
+                    // If buffer is nearly enough (>10%), smaller penalty
+                    if (rangeSafety.actualBufferPercent > 10) {
+                        score -= 20;
+                    } 
+                    // If buffer is very small (>0% but <10%), larger penalty
+                    else if (rangeSafety.actualBufferPercent > 0) {
+                        score -= 40;
+                    }
+                    // If range isn't even sufficient without buffer, severe penalty
+                    else {
+                        score -= 70;
+                    }
+                }
+            } else {
+                // If we can't calculate accumulated distance, we assume it's fine
+                perfectMatchCriteria++;
+            }
         }
 
         // Perfect match bonus - if all criteria are met, ensure score can reach 100
@@ -518,14 +657,94 @@ export function DayPage() {
         return Math.max(0, Math.min(100, Math.round(score))); // Round and clamp between 0-100
     };
 
+    // Function to calculate accumulated distance for the selected line on the current date
+    const calculateLineAccumulatedDistance = (): number => {
+        if (!selectedLine || !date) return 0;
+
+        const currentDate = new Date(date);
+        const dayOfWeek = currentDate
+            .toLocaleDateString('en-US', { weekday: 'long' })
+            .toLowerCase() as keyof typeof selectedLine.weeklySchedule;
+
+        const daySchedule = selectedLine.weeklySchedule[dayOfWeek];
+        if (!daySchedule) return 0;
+
+        // Convert time strings to minutes since midnight
+        const timeToMinutes = (time: string): number => {
+            const [hours, minutes] = time.split(':').map(Number);
+            if (hours === undefined || minutes === undefined) throw new Error(
+                `Invalid time format: ${time}. Expected format is HH:MM.`
+            );
+            return hours * 60 + minutes;
+        };
+
+        // Calculate operating minutes for the day
+        const startMinutes = timeToMinutes(daySchedule.start);
+        const endMinutes = timeToMinutes(daySchedule.end);
+
+        // Handle cases where end time is on the next day
+        let operatingMinutes = endMinutes > startMinutes 
+            ? endMinutes - startMinutes 
+            : (24 * 60 - startMinutes) + endMinutes;
+
+        // Calculate number of full trips possible in the operating time
+        // We add a 10-minute buffer between trips for turnaround
+        const tripDuration = selectedLine.durationMinutes + 10; // minutes per trip plus buffer
+        const tripsCount = Math.floor(operatingMinutes / tripDuration);
+
+        // Calculate total distance for all trips
+        return tripsCount * selectedLine.distanceKm;
+    };
+
     // Sort drivers based on their score for the current shift
+    // When scores are equal, sort by weekly working hours and then by name
     const getSortedDrivers = (): Driver[] => {
         if (!drivers || !shiftType) return drivers || [];
 
         return [...drivers].sort((a, b) => {
             const scoreA = scoreDriver(a, shiftType);
             const scoreB = scoreDriver(b, shiftType);
-            return scoreB - scoreA; // Descending order (highest score first)
+
+            // First sort by score (descending order - highest first)
+            if (scoreB !== scoreA) {
+                return scoreB - scoreA;
+            }
+
+            // If scores are equal, sort by weekly hours (descending)
+            if (a.weeklyHours !== b.weeklyHours) {
+                return b.weeklyHours - a.weeklyHours;
+            }
+
+            // If hours are also equal, sort alphabetically by name
+            return a.fullName.localeCompare(b.fullName);
+        });
+    };
+
+    // Sort buses based on their score for the current shift and line
+    const getSortedBuses = (): Bus[] => {
+        if (!buses || !shiftType || !selectedLine) return buses || [];
+
+        return [...buses].sort((a, b) => {
+            const scoreA = scoreBus(a, shiftType);
+            const scoreB = scoreBus(b, shiftType);
+
+            // First sort by score (descending order - highest first)
+            if (scoreB !== scoreA) {
+                return scoreB - scoreA;
+            }
+
+            // If scores are equal, prioritize diesel buses for routes with long distances
+            if (a.propulsionType !== b.propulsionType) {
+                const accumulatedDistance = calculateLineAccumulatedDistance();
+                if (accumulatedDistance > 200) { // For long routes, diesel might be preferred
+                    return a.propulsionType === PropulsionType.DIESEL ? -1 : 1;
+                } else { // For shorter routes, electric might be preferred
+                    return a.propulsionType === PropulsionType.ELECTRIC ? -1 : 1;
+                }
+            }
+
+            // If still equal, sort by license plate
+            return a.licensePlate.localeCompare(b.licensePlate);
         });
     };
 
@@ -534,6 +753,17 @@ export function DayPage() {
         if (!shiftType) return "";
 
         const score = scoreDriver(driver, shiftType);
+        if (score >= 70) return ""; // Full opacity for good matches
+        if (score >= 40) return "opacity-70";
+        if (score >= 20) return "opacity-50";
+        return "opacity-30"; // Very poor matches
+    };
+
+    // Get opacity level based on bus score
+    const getBusOpacity = (bus: Bus): string => {
+        if (!shiftType || !selectedLine) return "";
+
+        const score = scoreBus(bus, shiftType);
         if (score >= 70) return ""; // Full opacity for good matches
         if (score >= 40) return "opacity-70";
         if (score >= 20) return "opacity-50";
@@ -753,55 +983,18 @@ export function DayPage() {
                 <div className="lg:col-span-1">
                     <div className="flex flex-col gap-3 h-full">
                         {/* Line Details - Fixed height */}
-                        <Card className="flex-shrink-0">
-                            <CardHeader className="p-3">
-                                <CardTitle className="text-sm">Details</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-3">
-                                {lineId && selectedLine ? (
-                                    <div className="space-y-2">
-                                        <div>
-                                            <h3 className="font-medium text-sm">Linie {selectedLine.lineNumber}</h3>
-                                            <p className="text-xs text-muted-foreground">{selectedLine.routeName}</p>
-                                        </div>
-                                        <div className="flex gap-4 text-xs">
-                                            <span><span
-                                                className="font-medium">Distanz:</span> {selectedLine.distanceKm} km</span>
-                                            <span><span
-                                                className="font-medium">Dauer:</span> {selectedLine.durationMinutes} min</span>
-                                        </div>
-                                        {date && selectedLine && (
-                                            <div className="text-xs">
-                                                {(() => {
-                                                    const currentDate = new Date(date);
-                                                    const dayOfWeek = currentDate
-                                                        .toLocaleDateString('en-US', { weekday: 'long' })
-                                                        .toLowerCase() as keyof typeof selectedLine.weeklySchedule;
-                                                    const daySchedule = selectedLine.weeklySchedule[dayOfWeek];
-
-                                                    if (daySchedule) {
-                                                        return (
-                                                            <div className="text-xs">
-                                                                <span className="font-medium">Betriebszeiten:</span> {daySchedule.start} - {daySchedule.end}
-                                                            </div>
-                                                        );
-                                                    } else {
-                                                        return (
-                                                            <div className="text-xs text-muted-foreground">
-                                                                Kein Betrieb heute
-                                                            </div>
-                                                        );
-                                                    }
-                                                })()}
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <p className="text-center text-muted-foreground py-4 text-xs">Wählen Sie eine Linie
-                                        aus</p>
-                                )}
-                            </CardContent>
-                        </Card>
+                        {lineId && selectedLine ? (
+                            <LineDetailCard line={selectedLine} date={date} />
+                        ) : (
+                            <Card className="flex-shrink-0">
+                                <CardHeader className="p-3">
+                                    <CardTitle className="text-sm">Details</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-3">
+                                    <p className="text-center text-muted-foreground py-4 text-xs">Wählen Sie eine Linie aus</p>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Shifts - Compact layout */}
                         <div className="flex flex-col gap-3">
@@ -997,15 +1190,34 @@ export function DayPage() {
                                     {isLoadingBuses ? (
                                         <p className="text-center text-muted-foreground py-8">Wird geladen...</p>
                                     ) : (
+                                        <TooltipProvider>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-                                            {buses?.map((bus: Bus) => (
+                                            {getSortedBuses().map((bus: Bus) => {
+                                                // Calculate bus score for the tooltip and styling
+                                                const busScore = shiftType ? scoreBus(bus, shiftType) : 0;
+                                                const accumulatedDistance = calculateLineAccumulatedDistance();
+                                                const rangeSafety = bus.isElectric() && accumulatedDistance > 0 ? 
+                                                    bus.checkRangeSafety(accumulatedDistance, 20) : 
+                                                    { isSafe: true, actualBufferPercent: 100 };
+
+                                                // Check if bus is already assigned to another shift today
+                                                const alreadyAssignedToday = date && existingAssignments?.some(a => 
+                                                    a.busId === bus.id && 
+                                                    new Date(a.date).toDateString() === new Date(date).toDateString() &&
+                                                    (!shiftType || a.shift !== shiftType)
+                                                );
+
+                                                return (
+                                                <Tooltip key={bus.id}>
+                                                <TooltipTrigger asChild>
                                                 <div
-                                                    key={bus.id}
                                                     className={cn(
                                                         "p-2 border rounded-md hover:bg-muted/50 flex flex-col h-20 transition-all",
                                                         isSelectionMode && shiftType ? "cursor-pointer" : "",
                                                         tempSelectedBus === bus.id && "border-blue-500 border-2 bg-blue-50/50",
-                                                        shiftType && selectedBuses[shiftType] === bus.id && "border-green-500 border-2 bg-green-50/50"
+                                                        shiftType && selectedBuses[shiftType] === bus.id && "border-green-500 border-2 bg-green-50/50",
+                                                        date && !bus.isAvailableOnDate(new Date(date)) && "opacity-40 border-red-200",
+                                                        getBusOpacity(bus)
                                                     )}
                                                     onClick={() => {
                                                         if (isSelectionMode && shiftType) {
@@ -1019,38 +1231,169 @@ export function DayPage() {
                                                 >
                                                     <div className="flex justify-between items-center">
                                                         <p className="font-medium text-sm truncate">{bus.licensePlate}</p>
-                                                        <Badge
-                                                            variant={bus.propulsionType === PropulsionType.ELECTRIC ? "default" : "secondary"}
-                                                            className="text-xs h-4"
-                                                        >
-                                                            {bus.propulsionType === PropulsionType.ELECTRIC ? "Elektro" : "Diesel"}
-                                                        </Badge>
+                                                        <div className="flex gap-1 items-center">
+                                                            {shiftType && (
+                                                                <Badge 
+                                                                    variant="outline" 
+                                                                    className={cn(
+                                                                        "h-3 text-[9px] px-1",
+                                                                        busScore === 100 ? "text-blue-600 border-blue-200 bg-blue-50" :
+                                                                        busScore >= 70 ? "text-green-600 border-green-200 bg-green-50" :
+                                                                        busScore >= 40 ? "text-amber-600 border-amber-200 bg-amber-50" :
+                                                                        "text-red-600 border-red-200 bg-red-50"
+                                                                    )}
+                                                                >
+                                                                    {busScore}%
+                                                                </Badge>
+                                                            )}
+                                                            <Badge
+                                                                variant={bus.propulsionType === PropulsionType.ELECTRIC ? "default" : "secondary"}
+                                                                className="text-xs h-4"
+                                                            >
+                                                                {bus.propulsionType === PropulsionType.ELECTRIC ? "Elektro" : "Diesel"}
+                                                            </Badge>
+                                                        </div>
                                                     </div>
 
-                                                    <div className="flex items-center justify-between mt-1">
-                                                        <div
-                                                            className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                            <span>
+                                                    <div className="flex flex-col gap-1 mt-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <div
+                                                                className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                <span>
+                                                                    {bus.size === BusSize.SMALL ? "Klein" : 
+                                                                     bus.size === BusSize.MEDIUM ? "Mittel" : 
+                                                                     bus.size === BusSize.LARGE ? "Groß" : 
+                                                                     bus.size === BusSize.ARTICULATED ? "Gelenkbus" : bus.size}
+                                                                </span>
+                                                                {bus.propulsionType === PropulsionType.ELECTRIC && (
+                                                                    <span className={cn(
+                                                                        bus.isElectric() && !rangeSafety.isSafe && "text-amber-600 font-medium"
+                                                                    )}>
+                                                                        {bus.maxRangeKm || "--"} km
+                                                                    </span>
+                                                                )}
+
+                                                                {date && !bus.isAvailableOnDate(new Date(date)) && (
+                                                                    <Badge variant="destructive" className="text-[9px] h-3 px-1">
+                                                                        Nicht verfügbar
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1">
+                                                                {alreadyAssignedToday && (
+                                                                    <Badge className="text-[9px] h-3 px-1 bg-blue-500">
+                                                                        Bereits eingeplant
+                                                                    </Badge>
+                                                                )}
+
+                                                                {(tempSelectedBus === bus.id || (shiftType && selectedBuses[shiftType] === bus.id)) && (
+                                                                    <CheckCircle className={cn(
+                                                                        "h-4 w-4",
+                                                                        tempSelectedBus === bus.id ? "text-blue-500" : "text-green-500"
+                                                                    )}/>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {bus.isElectric() && selectedLine && (
+                                                            <div className="flex justify-between items-center">
+                                                                <div className="text-[10px] text-muted-foreground">
+                                                                    Reichweite: 
+                                                                    <span className={cn(
+                                                                        !rangeSafety.isSafe && "text-amber-600 font-medium"
+                                                                    )}>
+                                                                        {rangeSafety.actualBufferPercent}% Puffer
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="p-3 w-[250px]">
+                                                    <div className="space-y-2">
+                                                        <div className="font-medium">{bus.licensePlate}</div>
+                                                        {shiftType && (
+                                                            <div className="text-xs">
+                                                                <span className="font-medium">Übereinstimmung:</span>{' '}
+                                                                <span className={cn(
+                                                                    busScore === 100 ? "text-blue-600 font-bold" :
+                                                                    busScore >= 70 ? "text-green-600" :
+                                                                    busScore >= 40 ? "text-amber-600" :
+                                                                    "text-red-600"
+                                                                )}>
+                                                                    {busScore}%
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="text-xs space-y-1">
+                                                            <div>
+                                                                <span className="font-medium">Typ:</span>{' '}
                                                                 {bus.size === BusSize.SMALL ? "Klein" : 
                                                                  bus.size === BusSize.MEDIUM ? "Mittel" : 
                                                                  bus.size === BusSize.LARGE ? "Groß" : 
                                                                  bus.size === BusSize.ARTICULATED ? "Gelenkbus" : bus.size}
-                                                            </span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="font-medium">Antrieb:</span>{' '}
+                                                                {bus.propulsionType === PropulsionType.ELECTRIC ? "Elektrisch" : "Diesel"}
+                                                            </div>
                                                             {bus.propulsionType === PropulsionType.ELECTRIC && (
-                                                                <span>{bus.maxRangeKm || "--"} km</span>
+                                                                <div>
+                                                                    <span className="font-medium">Maximale Reichweite:</span>{' '}
+                                                                    {bus.maxRangeKm || "--"} km
+                                                                </div>
+                                                            )}
+
+                                                            {date && (
+                                                                <div className="mt-2">
+                                                                    <span className="font-medium text-xs">Verfügbarkeit am {format(new Date(date), 'dd.MM.yyyy', {locale: de})}:</span>{' '}
+                                                                    <span className={cn(
+                                                                        "text-xs",
+                                                                        bus.isAvailableOnDate(new Date(date)) ? "text-green-600" : "text-red-600 font-medium"
+                                                                    )}>
+                                                                        {bus.isAvailableOnDate(new Date(date)) ? "Verfügbar" : "Nicht verfügbar"}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+
+                                                            {alreadyAssignedToday && (
+                                                                <div className="mt-1">
+                                                                    <span className="font-medium text-xs text-blue-600">Bereits heute für andere Schicht eingeplant</span>
+                                                                </div>
+                                                            )}
+
+                                                            {bus.isElectric() && selectedLine && accumulatedDistance > 0 && (
+                                                                <div className="mt-2 space-y-1">
+                                                                    <div>
+                                                                        <span className="font-medium">Tagesfahrstrecke:</span>{' '}
+                                                                        {accumulatedDistance} km
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="font-medium">Benötigte Reichweite (20% Puffer):</span>{' '}
+                                                                        {Math.round(accumulatedDistance * 1.2)} km
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="font-medium">Reichweitenstatus:</span>{' '}
+                                                                        <span className={cn(
+                                                                            rangeSafety.isSafe ? "text-green-600" : "text-amber-600 font-medium"
+                                                                        )}>
+                                                                            {rangeSafety.isSafe 
+                                                                                ? `Ausreichend (${rangeSafety.actualBufferPercent}% Puffer)` 
+                                                                                : `Knapp (nur ${rangeSafety.actualBufferPercent}% Puffer)`}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
                                                             )}
                                                         </div>
-
-                                                        {(tempSelectedBus === bus.id || (shiftType && selectedBuses[shiftType] === bus.id)) && (
-                                                            <CheckCircle className={cn(
-                                                                "h-4 w-4",
-                                                                tempSelectedBus === bus.id ? "text-blue-500" : "text-green-500"
-                                                            )}/>
-                                                        )}
                                                     </div>
-                                                </div>
-                                            ))}
+                                                </TooltipContent>
+                                                </Tooltip>
+                                            )})}
                                         </div>
+                                        </TooltipProvider>
                                     )}
                                 </ScrollArea>
                             </CardContent>
@@ -1088,6 +1431,7 @@ export function DayPage() {
                                                         isSelectionMode && shiftType ? "cursor-pointer" : "",
                                                         tempSelectedDriver === driver.id && "border-blue-500 border-2 bg-blue-50/50",
                                                         shiftType && selectedDrivers[shiftType] === driver.id && "border-green-500 border-2 bg-green-50/50",
+                                                        date && !driver.isAvailableOnDate(new Date(date)) && "opacity-40 border-red-200",
                                                         getDriverOpacity(driver)
                                                     )}
                                                     onClick={() => {
@@ -1138,7 +1482,14 @@ export function DayPage() {
 
                                                     <div className="flex flex-col gap-1 mt-1">
                                                         <div className="flex items-center justify-between">
-                                                            <span className="text-xs text-muted-foreground">{driver.weeklyHours} Std/Woche</span>
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-xs text-muted-foreground">{driver.weeklyHours} Std/Woche</span>
+                                                                {date && driver.isAvailableOnDate && !driver.isAvailableOnDate(new Date(date)) && (
+                                                                    <Badge variant="destructive" className="text-[9px] h-3 px-1">
+                                                                        Nicht verfügbar
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
 
                                                             <div className="flex gap-1">
                                                                 {/* Always show all three shift types */}
@@ -1149,15 +1500,19 @@ export function DayPage() {
                                                                     // Get the badge label from the constant
                                                                     const label = SHIFT_CODES[shift];
 
+                                                                    // Check if driver is unavailable on this day for this shift
+                                                                    const isUnavailable = date && !driver.isAvailableOnDate(new Date(date));
+
                                                                     return (
                                                                         <Badge 
                                                                             key={`${driver.id}-shift-${shift}`}
                                                                             variant="outline"
                                                                             className={cn(
                                                                                 "text-[10px] h-3 px-1",
-                                                                                isPreferred && "text-green-600 border-green-200 bg-green-50",
-                                                                                isAvoided && "text-red-600 border-red-200 bg-red-50",
-                                                                                !isPreferred && !isAvoided && "text-gray-400 border-gray-200"
+                                                                                isPreferred && !isUnavailable && "text-green-600 border-green-200 bg-green-50",
+                                                                                isAvoided && !isUnavailable && "text-red-600 border-red-200 bg-red-50",
+                                                                                isUnavailable && "text-gray-400 border-gray-200 opacity-50",
+                                                                                !isPreferred && !isAvoided && !isUnavailable && "text-gray-400 border-gray-200"
                                                                             )}
                                                                         >
                                                                             {label}
@@ -1187,19 +1542,16 @@ export function DayPage() {
                                                                     Alle Tage verfügbar
                                                                 </div>
                                                             )}
-                                                            {date && driver.isAvailableOnDate && !driver.isAvailableOnDate(new Date(date)) && (
-                                                                <Badge className="text-[9px] h-3 px-1 bg-red-500">
-                                                                    Nicht verfügbar
-                                                                </Badge>
-                                                            )}
                                                             {date && existingAssignments && existingAssignments.some(a => 
                                                                 a.driverId === driver.id && 
                                                                 new Date(a.date).toDateString() === new Date(date).toDateString() &&
                                                                 (shiftType ? a.shift !== shiftType : true)
                                                             ) && (
-                                                                <Badge className="text-[9px] h-3 px-1 bg-blue-500">
-                                                                    Bereits eingeplant
-                                                                </Badge>
+                                                                <div className="ml-auto">
+                                                                    <Badge className="text-[9px] h-3 px-1 bg-blue-500">
+                                                                        Bereits eingeplant
+                                                                    </Badge>
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </div>
@@ -1249,27 +1601,46 @@ export function DayPage() {
                                                                         const isPreferred = driver.hasShiftPreference(shift);
                                                                         const isAvoided = driver.avoidsShift(shift);
                                                                                                                                                                 const shiftName = SHIFT_NAMES[shift];
+                                                                        const isUnavailable = date && !driver.isAvailableOnDate(new Date(date));
 
                                                                         return (
                                                                             <div key={`tooltip-${driver.id}-${shift}`} className="flex items-center gap-1">
                                                                                 <Badge 
                                                                                     className={cn(
                                                                                         "text-xs px-2 py-0",
-                                                                                        isPreferred && "bg-green-100 text-green-800 hover:bg-green-100",
-                                                                                        isAvoided && "bg-red-100 text-red-800 hover:bg-red-100",
-                                                                                        !isPreferred && !isAvoided && "bg-gray-100 text-gray-800 hover:bg-gray-100"
+                                                                                        isPreferred && !isUnavailable && "bg-green-100 text-green-800 hover:bg-green-100",
+                                                                                        isAvoided && !isUnavailable && "bg-red-100 text-red-800 hover:bg-red-100",
+                                                                                        isUnavailable && "bg-gray-100 text-gray-500 hover:bg-gray-100 opacity-60",
+                                                                                        !isPreferred && !isAvoided && !isUnavailable && "bg-gray-100 text-gray-800 hover:bg-gray-100"
                                                                                     )}
                                                                                     variant="outline"
                                                                                 >
                                                                                     {shiftName}
-                                                                                    {isPreferred && " ✓"}
-                                                                                    {isAvoided && " ✗"}
+                                                                                    {isPreferred && !isUnavailable && " ✓"}
+                                                                                    {isAvoided && !isUnavailable && " ✗"}
                                                                                 </Badge>
                                                                             </div>
                                                                         );
                                                                     })}
                                                                 </div>
                                                             </div>
+                                                            <div className="mt-2">
+                                                                <span className="font-medium text-xs">Verfügbarkeit am {format(new Date(date || new Date()), 'dd.MM.yyyy', {locale: de})}:</span>{' '}
+                                                                <span className={cn(
+                                                                    "text-xs",
+                                                                    date && driver.isAvailableOnDate(new Date(date)) ? "text-green-600" : "text-red-600 font-medium"
+                                                                )}>
+                                                                    {date && driver.isAvailableOnDate(new Date(date)) ? "Verfügbar" : "Nicht verfügbar"}
+                                                                </span>
+                                                            </div>
+                                                            {driver.unavailableDates && driver.unavailableDates.length > 0 && (
+                                                                <div className="mt-1">
+                                                                    <span className="font-medium text-xs">Urlaubstage/Krankheitstage:</span>{' '}
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {driver.unavailableDates.length} Tag{driver.unavailableDates.length !== 1 ? 'e' : ''}
+                                                                    </span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </TooltipContent>
