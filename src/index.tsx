@@ -185,6 +185,10 @@ const server = serve({
       return Response.json(planningService.state.getStats());
     },
 
+    '/api/stats/planning-status': async () => {
+      return Response.json(planningService.state.getPlanningStatus());
+    },
+
     // Settings endpoints
     '/api/settings/load-sample-data': async () => {
       try {

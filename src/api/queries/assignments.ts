@@ -81,6 +81,9 @@ export const useCreateAssignment = () => {
     onSuccess: (data, variables) => {
       // Invalidate queries that might be affected by this mutation
       queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.stats.planningStatus,
+      });
 
       // Extract the date from the variables to invalidate date-specific queries
       const dateStr = new Date(variables.date).toISOString().split('T')[0];
@@ -112,6 +115,9 @@ export const useDeleteAssignment = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
       queryClient.invalidateQueries({
         queryKey: queryKeys.assignments.details(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.stats.planningStatus,
       });
 
       // Since we don't know the date of the deleted assignment here,

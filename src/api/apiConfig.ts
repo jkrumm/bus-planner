@@ -54,4 +54,5 @@ export const SETTINGS_API = {
 // Stats endpoints
 export const STATS_API = {
   GET_ALL: `${API_BASE_URL}/stats`,
+  GET_PLANNING_STATUS: `${API_BASE_URL}/stats/planning-status`,
 };

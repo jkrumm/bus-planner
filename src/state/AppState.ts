@@ -1,6 +1,10 @@
 import { Bus } from '../models/entities/Bus.js';
 import { Driver } from '../models/entities/Driver.js';
-import { Line } from '../models/entities/Line.js';
+import {
+  Line,
+  type TimeSchedule,
+  type WeeklySchedule,
+} from '../models/entities/Line.js';
 import { Assignment } from '../models/entities/Assignment.js';
 import { ShiftType } from '../models/entities/Driver.js';
 
@@ -14,6 +18,21 @@ export interface AppStateData {
     lastSaved: string;
     created: string;
   };
+}
+
+export interface DailyPlanningStatus {
+  date: string; // ISO date string
+  totalShifts: number;
+  assignedShifts: number;
+  lines: LinePlanningStatus[];
+}
+
+export interface LinePlanningStatus {
+  id: string;
+  name: string;
+  lineNumber: string;
+  totalShifts: number;
+  assignedShifts: number;
 }
 
 export class AppState {
@@ -427,7 +446,7 @@ export class AppState {
     toRemove.forEach(assignment => this.assignments.delete(assignment.id));
   }
 
-  // === HELPER METHODS ===
+  // === STATS ===
 
   getStats() {
     return {
@@ -437,5 +456,146 @@ export class AppState {
       assignments: this.assignments.size,
       lastSaved: this.metadata.lastSaved,
     };
+  }
+
+  getPlanningStatus(): DailyPlanningStatus[] {
+    console.log('getPlanningStatus');
+
+    const statusMap = new Map<string, DailyPlanningStatus>();
+    const allLines = this.getAllLines();
+    const allAssignments = this.getAllAssignments();
+
+    // Get current date
+    const today = new Date();
+
+    // Calculate the start of the current week (Monday)
+    const currentDay = today.getDay();
+    const daysToMonday = currentDay === 0 ? 6 : currentDay - 1; // Adjust for Sunday
+
+    // Get start date (2 weeks ago, starting from the beginning of that week)
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - daysToMonday - 2 * 7); // Go back 2 full weeks from current week's Monday
+
+    // Get end date (6 weeks ahead, ending at the end of that week)
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 8 * 7 - 1); // 8 weeks total (2 past + current + 6 future) minus 1 day
+
+    // Initialize status for each day
+    for (
+      let date = new Date(startDate);
+      date <= endDate;
+      date.setDate(date.getDate() + 1)
+    ) {
+      const dateStr = date.toISOString().split('T')[0]!;
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+      const linesOperatingToday = allLines.filter(
+        line => line.isActive && line.operatesOnDate(date)
+      );
+
+      let totalDayShifts = 0;
+      const lineStatuses: LinePlanningStatus[] = [];
+
+      for (const line of linesOperatingToday) {
+        const lineShifts = this.calculateRequiredShiftsForLine(line, dayOfWeek);
+        totalDayShifts += lineShifts;
+
+        const assignedShiftsForLine = allAssignments.filter(
+          assignment =>
+            assignment.lineId === line.id && assignment.getDateKey() === dateStr
+        ).length;
+
+        lineStatuses.push({
+          id: line.id,
+          name: line.routeName,
+          lineNumber: line.lineNumber,
+          totalShifts: lineShifts,
+          assignedShifts: assignedShiftsForLine,
+        });
+      }
+
+      const totalAssignedShifts = allAssignments.filter(
+        assignment => assignment.getDateKey() === dateStr
+      ).length;
+
+      statusMap.set(dateStr, {
+        date: dateStr,
+        totalShifts: totalDayShifts,
+        assignedShifts: totalAssignedShifts,
+        lines: lineStatuses,
+      });
+    }
+
+    // Get all planning status entries sorted by date
+    const allStatusEntries = Array.from(statusMap.values()).sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
+
+    // Find the first Sunday (or whatever is considered the first day of week in your locale)
+    // For JS Date, 0 = Sunday, 1 = Monday, etc.
+    const firstSunday = new Date(startDate);
+    const dayToSunday = firstSunday.getDay(); // Days to go back to get to Sunday
+    firstSunday.setDate(firstSunday.getDate() - dayToSunday);
+
+    // Find the last Saturday (completing the last week)
+    const lastSaturday = new Date(endDate);
+    const daysToSaturday = 6 - lastSaturday.getDay(); // Days to go forward to get to Saturday
+    lastSaturday.setDate(lastSaturday.getDate() + daysToSaturday);
+
+    // Filter entries to include only full weeks
+    const firstSundayStr = firstSunday.toISOString().split('T')[0]!;
+    const lastSaturdayStr = lastSaturday.toISOString().split('T')[0]!;
+
+    const fullWeeksEntries = allStatusEntries.filter(
+      entry => entry.date >= firstSundayStr && entry.date <= lastSaturdayStr
+    );
+
+    return fullWeeksEntries;
+  }
+
+  private calculateRequiredShiftsForLine(
+    line: Line,
+    dayOfWeek: number
+  ): number {
+    // Based on your domain model, each line has a weekly schedule
+    // This method calculates how many shifts are needed for a specific line on a specific day
+    // You'll need to implement this based on your Line entity structure
+
+    // Map numeric day of week (0 = Sunday, 1 = Monday, etc.) to weeklySchedule keys
+    const dayMap = [
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+    ];
+
+    const dayKey = dayMap[dayOfWeek] as keyof WeeklySchedule;
+
+    // Assuming each active line needs coverage for each shift it operates
+    // This is a simplified calculation - adjust based on your actual business logic
+    const schedule: TimeSchedule | null = line.weeklySchedule[dayKey] ?? null;
+    if (!schedule || !line.isActive) {
+      return 0;
+    }
+
+    // Count how many shifts are needed based on operating hours
+    // This is a simplified approach - you may need more complex logic
+    let shiftsNeeded = 0;
+    const startHour = parseInt(schedule.start.split(':')[0]!);
+    const endHour = parseInt(schedule.end.split(':')[0]!);
+
+    // Early shift: 5:00 - 13:00
+    if (startHour <= 13 && endHour > 5) shiftsNeeded++;
+
+    // Late shift: 13:00 - 21:00
+    if (startHour <= 21 && endHour > 13) shiftsNeeded++;
+
+    // Night shift: 21:00 - 5:00
+    if (startHour <= 5 || endHour > 21) shiftsNeeded++;
+
+    return shiftsNeeded;
   }
 }

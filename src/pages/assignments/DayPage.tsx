@@ -38,10 +38,12 @@ import {
   useGetAssignmentsByDate,
   useDeleteAssignment,
 } from '@/api/queries/assignments';
+import { useGetPlanningStatus } from '@/api/queries/stats';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { LineDetailCard } from '@/components/line-detail-card';
 import { ShiftType } from '@/models/entities/Driver';
@@ -171,52 +173,6 @@ export function DayPage() {
     }
   };
 
-  // Generate date navigation tabs (5 days before, current day, 5 days after)
-  const generateDateTabs = () => {
-    if (!date) return [];
-
-    const currentDate = new Date(date);
-    const tabs = [];
-
-    // Generate 5 days before current date
-    for (let i = 5; i >= 1; i--) {
-      const tabDate = subDays(currentDate, i);
-      tabs.push({
-        date: tabDate,
-        dateString: format(tabDate, 'yyyy-MM-dd'),
-        displayDate: format(tabDate, 'dd.MM.yyyy'),
-        displayDay: format(tabDate, 'EEEE', { locale: de }),
-        label: getDateLabel(tabDate),
-        isActive: false,
-      });
-    }
-
-    // Add current date
-    tabs.push({
-      date: currentDate,
-      dateString: format(currentDate, 'yyyy-MM-dd'),
-      displayDate: format(currentDate, 'dd.MM.yyyy'),
-      displayDay: format(currentDate, 'EEEE', { locale: de }),
-      label: getDateLabel(currentDate),
-      isActive: true,
-    });
-
-    // Generate 5 days after current date
-    for (let i = 1; i <= 5; i++) {
-      const tabDate = addDays(currentDate, i);
-      tabs.push({
-        date: tabDate,
-        dateString: format(tabDate, 'yyyy-MM-dd'),
-        displayDate: format(tabDate, 'dd.MM.yyyy'),
-        displayDay: format(tabDate, 'EEEE', { locale: de }),
-        label: getDateLabel(tabDate),
-        isActive: false,
-      });
-    }
-
-    return tabs;
-  };
-
   // Get appropriate label for date (Heute, Gestern, Morgen, etc.)
   const getDateLabel = (date: Date) => {
     const diff = differenceInCalendarDays(date, new Date());
@@ -227,8 +183,6 @@ export function DayPage() {
     if (diff === -2) return 'Vorgestern';
     return `${diff > 0 ? '+' : ''}${diff} Tage`;
   };
-
-  const dateTabs = generateDateTabs();
 
   // Fetch all data
   const { data: lines, isLoading: isLoadingLines } = useGetLines();
@@ -480,9 +434,76 @@ export function DayPage() {
   const createAssignmentMutation = useCreateAssignment();
   const deleteAssignmentMutation = useDeleteAssignment();
 
+  // Get daily stats for the selected date
+  const { data: planningStatus } = useGetPlanningStatus();
+
   // Get existing assignments for the selected date
   const { data: existingAssignments, isLoading: isLoadingAssignments } =
     useGetAssignmentsByDate(date);
+
+  // Generate date navigation tabs (5 days before, current day, 5 days after)
+  const generateDateTabs = () => {
+    if (!date) return [];
+
+    const currentDate = new Date(date);
+    const tabs = [];
+
+    // Generate 5 days before current date
+    for (let i = 5; i >= 1; i--) {
+      const tabDate = subDays(currentDate, i);
+      const tabDateString = format(tabDate, 'yyyy-MM-dd');
+      // Find planning status for this date
+      const statusForDate = planningStatus?.find(s => s.date === tabDateString);
+
+      tabs.push({
+        date: tabDate,
+        dateString: tabDateString,
+        displayDate: format(tabDate, 'dd.MM.yyyy'),
+        displayDay: format(tabDate, 'EEEE', { locale: de }),
+        label: getDateLabel(tabDate),
+        isActive: false,
+        planningStatus: statusForDate || null,
+      });
+    }
+
+    // Add current date
+    const currentDateString = format(currentDate, 'yyyy-MM-dd');
+    const statusForCurrentDate = planningStatus?.find(
+      s => s.date === currentDateString
+    );
+
+    tabs.push({
+      date: currentDate,
+      dateString: currentDateString,
+      displayDate: format(currentDate, 'dd.MM.yyyy'),
+      displayDay: format(currentDate, 'EEEE', { locale: de }),
+      label: getDateLabel(currentDate),
+      isActive: true,
+      planningStatus: statusForCurrentDate || null,
+    });
+
+    // Generate 5 days after current date
+    for (let i = 1; i <= 5; i++) {
+      const tabDate = addDays(currentDate, i);
+      const tabDateString = format(tabDate, 'yyyy-MM-dd');
+      // Find planning status for this date
+      const statusForDate = planningStatus?.find(s => s.date === tabDateString);
+
+      tabs.push({
+        date: tabDate,
+        dateString: tabDateString,
+        displayDate: format(tabDate, 'dd.MM.yyyy'),
+        displayDay: format(tabDate, 'EEEE', { locale: de }),
+        label: getDateLabel(tabDate),
+        isActive: false,
+        planningStatus: statusForDate || null,
+      });
+    }
+
+    return tabs;
+  };
+
+  const dateTabs = generateDateTabs();
 
   // Update selected buses and drivers when existing assignments are loaded
   useEffect(() => {
@@ -1007,6 +1028,34 @@ export function DayPage() {
                   <div className="text-sm font-medium">{tab.label}</div>
                   <div className="text-xs">{tab.displayDate}</div>
                   <div className="text-xs capitalize">{tab.displayDay}</div>
+
+                  {/* Planning Status */}
+                  {tab.planningStatus && (
+                    <div className="mt-2 text-xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-muted-foreground">
+                          {tab.planningStatus.assignedShifts} von{' '}
+                          {tab.planningStatus.totalShifts}
+                        </span>
+                        {tab.planningStatus.assignedShifts ===
+                        tab.planningStatus.totalShifts ? (
+                          <CheckCircle className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <X className="h-3 w-3 text-red-500" />
+                        )}
+                      </div>
+                      <Progress
+                        value={
+                          tab.planningStatus.totalShifts > 0
+                            ? (tab.planningStatus.assignedShifts /
+                                tab.planningStatus.totalShifts) *
+                              100
+                            : 0
+                        }
+                        className="h-1"
+                      />
+                    </div>
+                  )}
                 </div>
               </Link>
             ))}
